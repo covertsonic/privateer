@@ -1,6 +1,52 @@
-# EVAteer
+# Privateer
 
-A 2D space combat game inspired by EVE Online, built with HTML5 Canvas and JavaScript.
+A 2D space combat and trading game built with HTML5 Canvas and JavaScript.
+
+## Current Status
+
+✅ **Implemented**
+- Core ECS (Entity-Component-System) architecture
+- Basic player ship with movement and physics
+- Input handling (keyboard + mouse)
+- Basic UI with ship status
+- Module system (weapons, shields, armor, propulsion)
+- Basic enemy AI
+
+🚧 **In Progress**
+- Target locking system
+- Orbiting mechanics
+- Combat system
+
+## Next Steps
+
+### High Priority
+1. **Targeting System**
+   - Implement target locking mechanics
+   - Add visual indicators for locked targets
+   - Display target information in the UI
+
+2. **Orbiting Mechanics**
+   - Implement orbit logic for the player ship
+   - Add orbit distance control
+   - Visual feedback for orbit status
+
+3. **Combat System**
+   - Weapon firing mechanics
+   - Projectile system
+   - Damage calculation and application
+
+### Medium Priority
+- Module activation UI
+- Enhanced enemy AI
+- Sound effects and visual feedback
+- Game state management
+
+### Future Features
+- Multiple weapon systems
+- Ship customization
+- Mission system
+- Persistent universe
+- Multiplayer support
 
 ## Features
 
@@ -8,6 +54,9 @@ A 2D space combat game inspired by EVE Online, built with HTML5 Canvas and JavaS
 - Ship module activation UI
 - Target tracking and display
 - Orbiting mechanics
+- Modular ship systems
+- Physics-based movement
+- Interactive UI with ship status
 
 ## Getting Started
 
