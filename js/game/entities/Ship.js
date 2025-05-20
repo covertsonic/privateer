@@ -40,6 +40,13 @@ export class Ship extends Entity {
             armor: options.armor || 30
         });
         
+        // Add energy component (capacitor)
+        this.addComponent('energy', {
+            max: options.maxEnergy || 100,
+            current: options.energy || 100,
+            rechargeRate: options.energyRechargeRate || 5 // per second
+        });
+        
         // Add collider component
         this.addComponent('collider', {
             radius: options.colliderRadius || 10,
@@ -66,12 +73,18 @@ export class Ship extends Entity {
         const position = this.components.position;
         const velocity = this.components.velocity;
         const rotation = this.components.rotation;
+        const energy = this.components.energy;
         
         // Update modules
         for (const module of this.modules) {
             if (module.update) {
                 module.update(deltaTime);
             }
+        }
+        
+        // Recharge energy
+        if (energy && energy.current < energy.max) {
+            energy.current = Math.min(energy.max, energy.current + energy.rechargeRate * deltaTime);
         }
         
         // Apply drag

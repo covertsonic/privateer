@@ -70,10 +70,174 @@ body {
     width: 200px;
 }
 
+/* Target List */
+#target-list {
+    grid-column: 1;
+    grid-row: 2;
+    width: 300px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+#targets-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.target-entry {
+    background-color: rgba(20, 30, 40, 0.6);
+    border: 1px solid #2a4a6e;
+    border-radius: 3px;
+    padding: 8px;
+    position: relative;
+    transition: background-color 0.2s ease;
+}
+
+.target-entry.selected {
+    background-color: rgba(40, 60, 90, 0.8);
+    border-color: #4a9cff;
+}
+
+.target-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.target-name {
+    font-weight: bold;
+    color: #e0e0e0;
+    font-size: 0.85em;
+}
+
+.target-distance {
+    font-size: 0.8em;
+    color: #a0c0e0;
+}
+
+.target-stats {
+    font-size: 0.75em;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.mini-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.mini-label {
+    color: #a0c0e0;
+    width: 12px;
+}
+
+.mini-bar {
+    display: flex;
+    gap: 1px;
+    height: 8px;
+}
+
+.mini-segment {
+    width: 6px;
+    height: 100%;
+    border-radius: 1px;
+}
+
+.mini-segment.filled.shield { background-color: #4a9cff; }
+.mini-segment.filled.armor { background-color: #ff9c4a; }
+.mini-segment.filled.hull { background-color: #ff4a4a; }
+.mini-segment.empty { background-color: rgba(255, 255, 255, 0.1); }
+
+.target-details {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75em;
+    color: #a0c0e0;
+}
+
+.target-button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.target-crosshair {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+}
+
+.target-crosshair::before,
+.target-crosshair::after {
+    content: '';
+    position: absolute;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.target-crosshair::before {
+    width: 8px;
+    height: 2px;
+    top: 5px;
+    left: 2px;
+}
+
+.target-crosshair::after {
+    width: 2px;
+    height: 8px;
+    top: 2px;
+    left: 5px;
+}
+
+.target-crosshair.locking {
+    border-color: rgba(255, 75, 75, 0.7);
+    animation: rotateLoader 1.5s linear infinite;
+}
+
+.target-crosshair.locking::before,
+.target-crosshair.locking::after {
+    background-color: rgba(255, 75, 75, 0.7);
+}
+
+.target-crosshair.locked {
+    border-color: rgba(255, 75, 75, 1);
+}
+
+.target-crosshair.locked::before,
+.target-crosshair.locked::after {
+    background-color: rgba(255, 75, 75, 1);
+}
+
+@keyframes rotateLoader {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.no-targets-message {
+    text-align: center;
+    color: #6a8aae;
+    font-style: italic;
+    font-size: 0.85em;
+    padding: 10px 0;
+}
+
 /* Ship Status */
 #ship-status {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 3;
     width: 200px;
 }
 

@@ -2,6 +2,7 @@ import { EntityManager } from './ecs/EntityManager.js';
 import { InputManager } from './input/InputManager.js';
 import { RenderSystem } from './systems/RenderSystem.js';
 import { PhysicsSystem } from './systems/PhysicsSystem.js';
+import { TargetingSystem } from './systems/TargetingSystem.js';
 import { PlayerShip } from './entities/PlayerShip.js';
 import { EnemyShip } from './entities/EnemyShip.js';
 
@@ -38,13 +39,15 @@ export class Game {
         this.physicsSystem = new PhysicsSystem();
         console.log('PhysicsSystem initialized');
         
+        this.targetingSystem = new TargetingSystem(this);
+        console.log('TargetingSystem initialized');
+        
         // Set canvas size to match window (after renderSystem is initialized)
         this.resize();
         window.addEventListener('resize', () => this.resize());
         
         // Game state
         this.player = null;
-        this.target = null;
         
         console.log('Game constructor completed');
     }
@@ -67,6 +70,10 @@ export class Game {
             
             this.entityManager.addEntity(this.player);
             console.log('Player ship added to entity manager');
+            
+            // Set player in targeting system
+            this.targetingSystem.setPlayer(this.player);
+            console.log('Player set in targeting system');
             
             // Create some enemy ships
             console.log('Spawning enemies...');
@@ -205,8 +212,24 @@ export class Game {
             this.player.update(deltaTime, this.inputManager);
         }
         
-        // Update physics
-        this.physicsSystem.update(this.entityManager, deltaTime);
+        // Update game systems
+        this.physicsSystem.update(this.deltaTime, this.entityManager);
+        this.targetingSystem.update(this.deltaTime, this.entityManager);
+        
+        // Update all entities
+        const entities = this.entityManager.getEntities();
+        for (const entity of entities) {
+            // Skip player since we already updated it separately
+            if (entity !== this.player && entity.update) {
+                // For enemy ships, pass the player ship as parameter
+                if (entity.constructor.name === 'EnemyShip') {
+                    entity.update(this.deltaTime, this.player);
+                } else {
+                    // For other entities, pass the input manager
+                    entity.update(this.deltaTime, this.inputManager);
+                }
+            }
+        }
         
         // Update target info
         this.updateTargetInfo();

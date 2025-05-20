@@ -10,6 +10,9 @@ export class RenderSystem {
     setCanvasSize(width, height) {
         this.width = width;
         this.height = height;
+        
+        // Regenerate starfield to match new canvas size
+        this.starfield = this.generateStarfield(200);
     }
     
     generateStarfield(count) {
@@ -37,7 +40,7 @@ export class RenderSystem {
         ctx.globalAlpha = 1.0;
     }
     
-    render(entityManager) {
+    render(entityManager, playerShip) {
         const ctx = this.ctx;
         
         // Clear the canvas
@@ -59,11 +62,21 @@ export class RenderSystem {
         
         // Draw all entities
         for (const entity of renderables) {
-            this.renderEntity(entity);
+            this.renderEntity(entity, playerShip);
+        }
+        
+        // Draw targeting indicators last so they're on top
+        if (playerShip && playerShip.target) {
+            this.renderTargetIndicator(playerShip.target);
+        }
+        
+        // Draw locking target indicator if applicable
+        if (playerShip && playerShip.lockingTarget) {
+            this.renderLockingIndicator(playerShip.lockingTarget);
         }
     }
     
-    renderEntity(entity) {
+    renderEntity(entity, playerShip) {
         const { position, renderable, rotation } = entity.components;
         const ctx = this.ctx;
         
@@ -99,22 +112,25 @@ export class RenderSystem {
         const { renderable } = entity.components;
         const ctx = this.ctx;
         
-        // Ship body
+        // Ship body color
         ctx.fillStyle = renderable.color || '#4a8cff';
-        ctx.strokeStyle = '#a0c0ff';
-        ctx.lineWidth = 1;
         
-        // Draw ship as a simple triangle for now
+        // Draw a simple triangle for the ship
         ctx.beginPath();
-        ctx.moveTo(0, -10); // Nose
-        ctx.lineTo(-6, 10);  // Bottom left
-        ctx.lineTo(6, 10);   // Bottom right
+        ctx.moveTo(15, 0);
+        ctx.lineTo(-10, -8);
+        ctx.lineTo(-10, 8);
         ctx.closePath();
-        
         ctx.fill();
-        ctx.stroke();
         
-        // Draw engine glow if moving
+        // Draw engine glow
+        ctx.fillStyle = '#44AAFF';
+        ctx.beginPath();
+        ctx.moveTo(-10, -4);
+        ctx.lineTo(-15, 0);
+        ctx.lineTo(-10, 4);
+        ctx.closePath();
+        ctx.fill();
         if (entity.components.velocity) {
             const speed = Math.sqrt(
                 entity.components.velocity.x * entity.components.velocity.x + 
@@ -174,6 +190,98 @@ export class RenderSystem {
         
         this.ctx.fillStyle = '#00ff00';
         this.ctx.fillRect(-width/2, -20, width * healthPercent, height);
+    }
+    
+    renderTargetIndicator(target) {
+        if (!target || !target.components.position) return;
+        
+        const pos = target.components.position;
+        const ctx = this.ctx;
+        
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        
+        // Draw targeting box
+        ctx.strokeStyle = '#FF4A4A';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 3]);
+        
+        // Size based on ship size (approximated)
+        const size = 30;
+        ctx.strokeRect(-size/2, -size/2, size, size);
+        
+        // Draw corner accents
+        ctx.setLineDash([]);
+        const cornerSize = 5;
+        
+        // Top-left corner
+        ctx.beginPath();
+        ctx.moveTo(-size/2, -size/2 + cornerSize);
+        ctx.lineTo(-size/2, -size/2);
+        ctx.lineTo(-size/2 + cornerSize, -size/2);
+        ctx.stroke();
+        
+        // Top-right corner
+        ctx.beginPath();
+        ctx.moveTo(size/2 - cornerSize, -size/2);
+        ctx.lineTo(size/2, -size/2);
+        ctx.lineTo(size/2, -size/2 + cornerSize);
+        ctx.stroke();
+        
+        // Bottom-left corner
+        ctx.beginPath();
+        ctx.moveTo(-size/2, size/2 - cornerSize);
+        ctx.lineTo(-size/2, size/2);
+        ctx.lineTo(-size/2 + cornerSize, size/2);
+        ctx.stroke();
+        
+        // Bottom-right corner
+        ctx.beginPath();
+        ctx.moveTo(size/2 - cornerSize, size/2);
+        ctx.lineTo(size/2, size/2);
+        ctx.lineTo(size/2, size/2 - cornerSize);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+    
+    renderLockingIndicator(target) {
+        if (!target || !target.components.position) return;
+        
+        const pos = target.components.position;
+        const ctx = this.ctx;
+        
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        
+        // Draw targeting circle (animated)
+        ctx.strokeStyle = 'rgba(255, 74, 74, 0.7)';
+        ctx.lineWidth = 1.5;
+        
+        // Pulsing effect
+        const time = Date.now() / 1000;
+        const pulseSize = 32 + Math.sin(time * 5) * 3;
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, pulseSize, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Inner dashed circle (rotating)
+        ctx.setLineDash([3, 3]);
+        ctx.lineWidth = 1;
+        
+        // Rotating effect
+        ctx.save();
+        ctx.rotate(time * 2);
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, 25, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        ctx.restore();
+        ctx.setLineDash([]);
+        
+        ctx.restore();
     }
     
     drawTargetReticle(target) {

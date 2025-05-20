@@ -19,9 +19,11 @@ export class PlayerShip extends Ship {
         
         // Player-specific properties
         this.target = null;
+        this.lockingTarget = null; // For targeting animation
         this.orbitTarget = null;
         this.orbitDistance = 150;
         this.orbitSpeed = 1.5;
+        this.maxTargetRange = 1500;
     }
     
     initializeModules() {
@@ -71,6 +73,11 @@ export class PlayerShip extends Ship {
         const velocity = this.components.velocity;
         const rotation = this.components.rotation;
         
+        // Handle orbiting if we have a target and orbiting is enabled
+        if (this.target && this.orbitTarget === this.target) {
+            this.orbit(deltaTime);
+        }
+        
         // Handle rotation
         if (inputManager.isKeyDown('a') || inputManager.isKeyDown('arrowleft')) {
             rotation.angle += velocity.rotationSpeed * deltaTime;
@@ -117,6 +124,11 @@ export class PlayerShip extends Ship {
             this.activateModule('armor');
         }
         
+        // Handle orbit toggle with 'o' key
+        if (inputManager.isKeyPressed('o') && this.target) {
+            this.toggleOrbit();
+        }
+        
         // Update UI
         this.updateUI();
     }
@@ -133,6 +145,74 @@ export class PlayerShip extends Ship {
                     btn.classList.add('active');
                 }
             });
+        }
+    }
+    
+    toggleOrbit() {
+        if (!this.target) return;
+        
+        if (this.orbitTarget === this.target) {
+            // Disable orbiting
+            this.orbitTarget = null;
+            console.log('Orbiting disabled');
+        } else {
+            // Enable orbiting
+            this.orbitTarget = this.target;
+            console.log('Orbiting target:', this.target.components.ship?.name);
+        }
+    }
+    
+    orbit(deltaTime) {
+        if (!this.orbitTarget || !this.orbitTarget.components.position) return;
+        
+        const targetPos = this.orbitTarget.components.position;
+        const myPos = this.components.position;
+        
+        // Calculate current distance and direction to target
+        const dx = targetPos.x - myPos.x;
+        const dy = targetPos.y - myPos.y;
+        const currentDistance = Math.sqrt(dx * dx + dy * dy);
+        
+        // If we're close to our desired orbit distance, maintain the orbit
+        if (Math.abs(currentDistance - this.orbitDistance) < 20) {
+            // Calculate the orbit angle perpendicular to the target direction
+            const angleToTarget = Math.atan2(-dy, dx);
+            const orbitAngle = angleToTarget + Math.PI/2; // Perpendicular
+            
+            // Update velocity to move along the orbit path
+            this.components.velocity.x = Math.cos(orbitAngle) * this.orbitSpeed * 100;
+            this.components.velocity.y = -Math.sin(orbitAngle) * this.orbitSpeed * 100;
+            
+            // Set ship rotation to face the orbit direction
+            this.components.rotation.angle = orbitAngle;
+        } else {
+            // Move closer or further to reach the desired orbit distance
+            const moveCloser = currentDistance > this.orbitDistance;
+            const angleToTarget = Math.atan2(-dy, dx);
+            const moveAngle = moveCloser ? angleToTarget : angleToTarget + Math.PI;
+            
+            // Apply acceleration toward or away from target
+            const accel = this.components.velocity.acceleration * deltaTime;
+            this.components.velocity.x += Math.cos(moveAngle) * accel;
+            this.components.velocity.y -= Math.sin(moveAngle) * accel;
+            
+            // Limit speed
+            const speed = Math.sqrt(
+                this.components.velocity.x * this.components.velocity.x + 
+                this.components.velocity.y * this.components.velocity.y
+            );
+            
+            if (speed > this.components.velocity.maxSpeed) {
+                this.components.velocity.x = (this.components.velocity.x / speed) * this.components.velocity.maxSpeed;
+                this.components.velocity.y = (this.components.velocity.y / speed) * this.components.velocity.maxSpeed;
+            }
+            
+            // Set ship rotation to face the direction of movement
+            if (moveCloser) {
+                this.components.rotation.angle = angleToTarget;
+            } else {
+                this.components.rotation.angle = angleToTarget + Math.PI;
+            }
         }
     }
     

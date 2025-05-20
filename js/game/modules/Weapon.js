@@ -44,7 +44,7 @@ export class Weapon {
         this.isFiring = false;
     }
     
-    fire(target = null) {
+    canFire() {
         const currentTime = Date.now() / 1000; // Convert to seconds
         
         // Check if weapon is ready to fire
@@ -52,9 +52,27 @@ export class Weapon {
             return false;
         }
         
+        // Check if ship has energy component
+        if (!this.ship.components.energy) {
+            console.log('Ship is missing energy component');
+            return false;
+        }
+        
         // Check if ship has enough energy
         if (this.ship.components.energy.current < this.energyCost) {
             console.log('Not enough energy to fire weapon');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    fire(target = null) {
+        // Get current time
+        const currentTime = Date.now() / 1000; // Convert to seconds
+        
+        // Use canFire to check if the weapon can be fired
+        if (!this.canFire()) {
             return false;
         }
         

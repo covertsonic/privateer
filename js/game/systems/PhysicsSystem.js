@@ -4,7 +4,7 @@ export class PhysicsSystem {
         this.drag = 0.98; // Small amount of drag to simulate space friction
     }
     
-    update(entityManager, deltaTime) {
+    update(deltaTime, entityManager) {
         const entities = entityManager.getEntitiesWithComponents('position', 'velocity');
         
         for (const entity of entities) {
