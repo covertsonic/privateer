@@ -1,0 +1,185 @@
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0a0a14;
+    color: #e0e0e0;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    background-color: #000;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* UI Overlay */
+#ui-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 20px;
+}
+
+.panel {
+    background-color: rgba(10, 20, 30, 0.8);
+    border: 1px solid #2a4a6e;
+    border-radius: 4px;
+    padding: 10px;
+    color: #a0c0e0;
+    pointer-events: auto;
+}
+
+.panel-header {
+    color: #4a9cff;
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #2a4a6e;
+    padding-bottom: 4px;
+}
+
+/* Target Info */
+#target-info {
+    grid-column: 1;
+    grid-row: 1;
+    width: 200px;
+}
+
+/* Ship Status */
+#ship-status {
+    grid-column: 1;
+    grid-row: 2;
+    width: 200px;
+}
+
+.status-bar {
+    margin-bottom: 8px;
+}
+
+.status-label {
+    font-size: 0.8em;
+    margin-bottom: 2px;
+    color: #a0c0e0;
+}
+
+.status-bar-outer {
+    height: 12px;
+    background-color: #0a1420;
+    border: 1px solid #2a4a6e;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.status-bar-inner {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.status-bar-inner.shield { background-color: #4a9cff; }
+.status-bar-inner.armor { background-color: #ff9c4a; }
+.status-bar-inner.hull { background-color: #ff4a4a; }
+.status-bar-inner.capacitor { background-color: #4aff9c; }
+
+/* Module Buttons */
+#module-buttons {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    width: 300px;
+    justify-self: end;
+}
+
+.module-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.module-btn {
+    flex: 1;
+    background-color: #1a2a3a;
+    border: 1px solid #2a4a6e;
+    color: #a0c0e0;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.2s ease;
+}
+
+.module-btn:hover {
+    background-color: #2a3a4a;
+    border-color: #4a6e9c;
+}
+
+.module-btn.active {
+    background-color: #2a4a6e;
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(74, 156, 255, 0.5);
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    #ui-overlay {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    #module-buttons {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    
+    #ship-status {
+        grid-column: 1;
+        grid-row: 2;
+    }
+    
+    #target-info {
+        grid-column: 1;
+        grid-row: 3;
+    }
+}
+
+@media (max-width: 600px) {
+    #ui-overlay {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+    
+    #module-buttons,
+    #ship-status,
+    #target-info {
+        width: 100%;
+        grid-column: 1;
+    }
+    
+    #module-buttons { grid-row: 1; }
+    #ship-status { grid-row: 2; }
+    #target-info { grid-row: 3; }
+}

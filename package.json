@@ -1,0 +1,14 @@
+{
+  "name": "evateer2",
+  "version": "1.0.0",
+  "description": "2D Space Combat Game",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

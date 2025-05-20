@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EVAteer - 2D Space Combat</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <!-- UI Overlay -->
+        <div id="ui-overlay">
+            <!-- Target Info -->
+            <div id="target-info" class="panel">
+                <div class="panel-header">TARGET</div>
+                <div id="target-name">No Target</div>
+                <div id="target-distance">-</div>
+                <div id="target-velocity">-</div>
+            </div>
+            
+            <!-- Ship Status -->
+            <div id="ship-status" class="panel">
+                <div class="panel-header">SHIP STATUS</div>
+                <div class="status-bar">
+                    <div class="status-label">Shields</div>
+                    <div class="status-bar-outer">
+                        <div id="shield-bar" class="status-bar-inner shield"></div>
+                    </div>
+                </div>
+                <div class="status-bar">
+                    <div class="status-label">Armor</div>
+                    <div class="status-bar-outer">
+                        <div id="armor-bar" class="status-bar-inner armor"></div>
+                    </div>
+                </div>
+                <div class="status-bar">
+                    <div class="status-label">Hull</div>
+                    <div class="status-bar-outer">
+                        <div id="hull-bar" class="status-bar-inner hull"></div>
+                    </div>
+                </div>
+                <div class="status-bar">
+                    <div class="status-label">Capacitor</div>
+                    <div class="status-bar-outer">
+                        <div id="capacitor-bar" class="status-bar-inner capacitor"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Module Buttons -->
+            <div id="module-buttons" class="panel">
+                <div class="panel-header">MODULES</div>
+                <div class="module-row">
+                    <button id="weapon-btn" class="module-btn" data-module="weapon">WEAPON</button>
+                    <button id="shield-btn" class="module-btn" data-module="shield">SHIELD</button>
+                </div>
+                <div class="module-row">
+                    <button id="propulsion-btn" class="module-btn" data-module="propulsion">PROPULSION</button>
+                    <button id="armor-btn" class="module-btn" data-module="armor">ARMOR</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Game Scripts -->
+    <script type="module" src="./js/game/Game.js"></script>
+</body>
+</html>
