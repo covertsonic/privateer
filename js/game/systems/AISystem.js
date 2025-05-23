@@ -5,10 +5,13 @@ export class AISystem {
     constructor() {
         // Configuration for AI behaviors
         this.config = {
-            attackRange: 200,        // Distance at which AI will engage
-            orbitDistance: 150,      // Preferred orbit distance
+            attackRange: 300,        // Distance at which AI will engage
+            orbitDistance: 250,      // Preferred orbit distance
             fleeHealthPercent: 0.2,  // Health percentage to flee at
-            updateInterval: 0.1      // How often to update AI decisions (seconds)
+            updateInterval: 0.1,     // How often to update AI decisions (seconds)
+            minVelocity: 5,         // Minimum velocity for ships
+            orbitSpeedFactor: 0.7,   // Orbit speed as fraction of max speed
+            defaultState: 'orbit'    // Default behavior state: 'orbit', 'idle', or 'attacking'
         };
         
         this.updateTimers = new Map();
@@ -58,13 +61,23 @@ export class AISystem {
         const dy = playerShip.components.position.y - position.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
+        // Ensure ships always have some velocity
+        const currentSpeed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+        if (currentSpeed < this.config.minVelocity) {
+            // Apply random velocity if ship is too slow
+            const randomAngle = Math.random() * Math.PI * 2;
+            velocity.x = Math.cos(randomAngle) * this.config.minVelocity;
+            velocity.y = Math.sin(randomAngle) * this.config.minVelocity;
+        }
+        
         // Determine AI state based on conditions
         if (health && health.current / health.max < this.config.fleeHealthPercent) {
             entity.state = 'fleeing';
         } else if (distance < this.config.attackRange) {
             entity.state = 'attacking';
         } else {
-            entity.state = 'idle';
+            // Use the default state from config instead of always 'idle'
+            entity.state = this.config.defaultState;
         }
         
         // Execute behavior based on state
@@ -75,7 +88,11 @@ export class AISystem {
             case 'fleeing':
                 this.executeFleeBehavior(entity, playerShip);
                 break;
+            case 'orbit':
+                this.executeOrbitBehavior(entity, playerShip, distance);
+                break;
             case 'idle':
+            default:
                 this.executeIdleBehavior(entity);
                 break;
         }
@@ -120,31 +137,51 @@ export class AISystem {
     executeOrbitBehavior(entity, target, distance) {
         const position = entity.components.position;
         const velocity = entity.components.velocity;
+        const rotation = entity.components.rotation;
         
-        // Calculate perpendicular direction for orbiting
+        // Calculate direction vector to target
         const dx = target.components.position.x - position.x;
         const dy = target.components.position.y - position.y;
         
-        // Normalize
+        // Normalize direction vector
         const length = Math.sqrt(dx * dx + dy * dy);
         if (length === 0) return;
         
         const nx = dx / length;
         const ny = dy / length;
         
-        // Perpendicular vector (90 degrees)
-        const perpX = -ny;
-        const perpY = nx;
+        // Maintain optimal orbit distance
+        let radiusAdjustment = 0;
+        const desiredDistance = this.config.orbitDistance;
+        
+        if (Math.abs(distance - desiredDistance) > 20) {
+            // If we're too far or too close, adjust our orbit
+            radiusAdjustment = (distance - desiredDistance) * 0.05;
+        }
+        
+        // Perpendicular vector for circular motion (90 degrees)
+        // Choose clockwise or counter-clockwise based on entity ID for variety
+        const direction = parseInt(entity.id.substr(-1), 36) % 2 === 0 ? 1 : -1;
+        const perpX = -ny * direction;
+        const perpY = nx * direction;
         
         // Set velocity for circular motion
-        const orbitSpeed = velocity.maxSpeed * 0.6;
+        const orbitSpeed = velocity.maxSpeed * this.config.orbitSpeedFactor;
         velocity.x = perpX * orbitSpeed;
         velocity.y = perpY * orbitSpeed;
         
-        // Add slight inward force to maintain orbit
-        const inwardForce = 0.1;
-        velocity.x += nx * orbitSpeed * inwardForce;
-        velocity.y += ny * orbitSpeed * inwardForce;
+        // Add adjustment to maintain desired orbit distance
+        velocity.x -= nx * radiusAdjustment;
+        velocity.y -= ny * radiusAdjustment;
+        
+        // Update rotation to face perpendicular to orbit direction (like real ships)
+        if (rotation) {
+            // Calculate the direction of movement
+            rotation.angle = Math.atan2(velocity.y, velocity.x);
+        }
+        
+        // Set entity target for weapons
+        entity.target = target;
     }
     
     executeFleeBehavior(entity, threat) {
