@@ -17,7 +17,7 @@ console.log('All imports completed');
 const checkDOM = () => {
     console.log('Checking required elements...');
     console.log('Canvas element:', document.getElementById('game-canvas'));
-    console.log('Game container:', document.querySelector('.game-container'));
+    console.log('Game container:', document.querySelector('.game-container') || document.getElementById('game-container'));
 };
 
 export class Game {
@@ -33,7 +33,8 @@ export class Game {
         this.ctx = this.canvas.getContext('2d');
         
         // Get the game container
-        this.gameContainer = document.querySelector('.game-container');
+        // Support both class and id selectors for the game container
+        this.gameContainer = document.querySelector('.game-container') || document.getElementById('game-container');
         if (!this.gameContainer) {
             throw new Error('Game container element not found');
         }
