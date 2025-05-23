@@ -16,6 +16,68 @@ export class EnemyShip extends Ship {
             orbitSpeed: options.orbitSpeed || 1
         });
         
+        // Set team for targeting
+        this.team = 'enemy';
+        this.isActive = true;
+        this.id = 'enemy-' + Math.random().toString(36).substr(2, 9);
+        
+        // Ensure all required components for targeting are present
+        if (!this.components) this.components = {};
+        
+        // Add or update ship component with name
+        this.components.ship = this.components.ship || {};
+        this.components.ship.name = options.name || 'Enemy Ship';
+        
+        // Make sure position is set
+        if (!this.components.position) {
+            this.components.position = { x: x, y: y };
+        } else {
+            this.components.position.x = x;
+            this.components.position.y = y;
+        }
+        
+        // Ensure velocity exists
+        if (!this.components.velocity) {
+            this.components.velocity = { x: 0, y: 0 };
+        }
+        
+        // Ensure rotation exists
+        if (!this.components.rotation) {
+            this.components.rotation = { angle: 0 };
+        }
+        
+        // Ensure health exists
+        if (!this.components.health) {
+            this.components.health = { 
+                current: options.maxHealth || 100, 
+                max: options.maxHealth || 100 
+            };
+        }
+        
+        // Ensure shield exists
+        if (!this.components.shield) {
+            this.components.shield = { 
+                current: options.shield || 50, 
+                max: options.shield || 50 
+            };
+        }
+        
+        // Ensure armor exists
+        if (!this.components.armor) {
+            this.components.armor = { 
+                current: options.armor || 30, 
+                max: options.armor || 30 
+            };
+        }
+        
+        // Add hull component if it doesn't exist
+        if (!this.components.hull) {
+            this.components.hull = { 
+                current: options.maxHealth || 100, 
+                max: options.maxHealth || 100 
+            };
+        }
+        
         // AI behavior properties
         this.state = 'idle'; // idle, attacking, fleeing
         this.detectionRange = 400;

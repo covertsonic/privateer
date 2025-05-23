@@ -75,23 +75,43 @@ body {
     grid-column: 1;
     grid-row: 2;
     width: 300px;
-    max-height: 250px;
-    overflow-y: auto;
+    height: 300px; /* Fixed height for the panel */
 }
 
 #targets-container {
+    height: calc(100% - 30px); /* Account for header height */
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 8px;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #2a4a6e rgba(20, 30, 40, 0.6);
+}
+
+/* Custom scrollbar for WebKit browsers (Chrome, Safari, etc.) */
+#targets-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#targets-container::-webkit-scrollbar-track {
+    background: rgba(20, 30, 40, 0.6);
+    border-radius: 3px;
+}
+
+#targets-container::-webkit-scrollbar-thumb {
+    background-color: #2a4a6e;
+    border-radius: 3px;
 }
 
 .target-entry {
     background-color: rgba(20, 30, 40, 0.6);
     border: 1px solid #2a4a6e;
     border-radius: 3px;
-    padding: 8px;
+    padding: 8px 32px 8px 8px; /* Add right padding for the crosshair */
     position: relative;
     transition: background-color 0.2s ease;
+    min-height: 60px; /* Ensure minimum height for consistent layout */
 }
 
 .target-entry.selected {
@@ -121,6 +141,7 @@ body {
     display: flex;
     justify-content: space-between;
     margin-bottom: 4px;
+    width: 100%; /* Ensure full width */
 }
 
 .mini-status {
@@ -156,6 +177,7 @@ body {
     justify-content: space-between;
     font-size: 0.75em;
     color: #a0c0e0;
+    width: 100%; /* Ensure full width */
 }
 
 .target-button {
@@ -163,14 +185,15 @@ body {
     right: 8px;
     top: 50%;
     transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     display: flex;
     justify-content: center;
     align-items: center;
     background: none;
     border: none;
     cursor: pointer;
+    z-index: 1; /* Ensure it's above other elements */
 }
 
 .target-crosshair {
