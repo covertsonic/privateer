@@ -14,6 +14,38 @@ export class EntityManager {
     
     addEntity(entity) {
         this.entities.add(entity);
+        
+        // Register any existing components
+        if (entity.components) {
+            this.registerEntityComponents(entity);
+        }
+        
+        return entity;
+    }
+    
+    registerEntityComponents(entity) {
+        if (!entity || !entity.components) return entity;
+        
+        console.log(`Registering components for entity ${entity.id || 'unknown'}:`, 
+                    Object.keys(entity.components));
+        
+        // Add all components to the component maps
+        for (const [componentName, componentData] of Object.entries(entity.components)) {
+            // Skip if already registered
+            if (this.components.has(componentName) && 
+                this.components.get(componentName).has(entity)) {
+                continue;
+            }
+            
+            // Ensure the component map exists
+            if (!this.components.has(componentName)) {
+                this.components.set(componentName, new Set());
+            }
+            
+            // Add entity to component map
+            this.components.get(componentName).add(entity);
+        }
+        
         return entity;
     }
     
@@ -80,6 +112,16 @@ export class EntityManager {
         return this.getEntities().find(entity => 
             componentNames.every(componentName => entity.components[componentName])
         );
+    }
+    
+    getPlayerShip() {
+        // Find the entity with team 'player'
+        for (const entity of this.entities) {
+            if (entity.team === 'player') {
+                return entity;
+            }
+        }
+        return null;
     }
     
     clear() {

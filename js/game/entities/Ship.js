@@ -8,50 +8,54 @@ export class Ship extends Entity {
         this.name = options.name || 'Unnamed Ship';
         this.team = options.team || 'neutral';
         
+        // Store the entity manager reference
+        this.entityManager = null;
+        
         // Add position component
-        this.addComponent('position', { x, y });
+        this.components = this.components || {};
+        this.components.position = { x, y };
         
         // Add velocity component
-        this.addComponent('velocity', { 
+        this.components.velocity = { 
             x: 0, 
             y: 0,
             maxSpeed: options.maxSpeed || 200,
             acceleration: options.acceleration || 100,
             rotationSpeed: options.rotationSpeed || 3
-        });
+        };
         
         // Add rotation component
-        this.addComponent('rotation', { 
+        this.components.rotation = { 
             angle: options.angle || Math.PI / 2 // Point up by default
-        });
+        };
         
         // Add renderable component
-        this.addComponent('renderable', {
+        this.components.renderable = {
             type: 'ship',
             color: options.color || '#4a8cff',
             zIndex: 10
-        });
+        };
         
         // Add health component
-        this.addComponent('health', {
+        this.components.health = {
             max: options.maxHealth || 100,
             current: options.health || 100,
             shield: options.shield || 50,
             armor: options.armor || 30
-        });
+        };
         
         // Add energy component (capacitor)
-        this.addComponent('energy', {
+        this.components.energy = {
             max: options.maxEnergy || 100,
             current: options.energy || 100,
             rechargeRate: options.energyRechargeRate || 5 // per second
-        });
+        };
         
         // Add collider component
-        this.addComponent('collider', {
+        this.components.collider = {
             radius: options.colliderRadius || 10,
             type: 'ship'
-        });
+        };
         
         // Ship state
         this.target = null;
@@ -87,16 +91,11 @@ export class Ship extends Entity {
             energy.current = Math.min(energy.max, energy.current + energy.rechargeRate * deltaTime);
         }
         
-        // Apply drag
-        velocity.x *= 0.98;
-        velocity.y *= 0.98;
+        // Note: Position updates are now handled by PhysicsSystem
+        // to ensure consistent scaling and gameplay factors.
+        // The PhysicsSystem will apply velocity, drag, and bounds checking.
         
-        // Update position
-        position.x += velocity.x * deltaTime;
-        position.y += velocity.y * deltaTime;
-        
-        // Keep ship in bounds
-        this.keepInBounds();
+        // Keep ship in bounds (called by PhysicsSystem)
     }
     
     keepInBounds() {

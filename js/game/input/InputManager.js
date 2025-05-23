@@ -1,6 +1,7 @@
 export class InputManager {
     constructor() {
         this.keys = {};
+        this.keysPressed = {}; // Track keys that were just pressed this frame
         this.mouse = {
             x: 0,
             y: 0,
@@ -18,11 +19,17 @@ export class InputManager {
             if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
                 e.preventDefault();
             }
-            this.keys[e.key.toLowerCase()] = true;
+            const key = e.key.toLowerCase();
+            if (!this.keys[key]) {
+                this.keysPressed[key] = true;
+            }
+            this.keys[key] = true;
         });
         
         window.addEventListener('keyup', (e) => {
-            this.keys[e.key.toLowerCase()] = false;
+            const key = e.key.toLowerCase();
+            this.keys[key] = false;
+            this.keysPressed[key] = false;
         });
         
         // Mouse events
@@ -55,9 +62,8 @@ export class InputManager {
     }
     
     isKeyPressed(key) {
-        // This would need to track key press state between frames
-        // For now, just return the current state
-        return this.isKeyDown(key);
+        // Returns true only on the frame the key was pressed
+        return !!this.keysPressed[key.toLowerCase()];
     }
     
     isMouseButtonDown(button = 0) {
@@ -75,13 +81,16 @@ export class InputManager {
     }
     
     update() {
-        // Update input states that need frame-by-frame tracking
-        // Currently empty as we're not tracking pressed/released states
+        // Clear pressed keys after each frame
+        for (const key in this.keysPressed) {
+            this.keysPressed[key] = false;
+        }
     }
     
     clear() {
         // Clear all input states
         this.keys = {};
+        this.keysPressed = {};
         this.mouse.buttons = {};
         this.mouse.wheel = 0;
     }

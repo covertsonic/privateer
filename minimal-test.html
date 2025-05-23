@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minimal Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        .game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        #game-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+    
+    <script type="module">
+        console.log('=== MINIMAL TEST START ===');
+        
+        try {
+            console.log('About to import EntityManager...');
+            const { EntityManager } = await import('./js/game/ecs/EntityManager.js');
+            console.log('EntityManager imported successfully:', EntityManager);
+            
+            console.log('About to import Game...');
+            const { Game } = await import('./js/game/Game.js');
+            console.log('Game imported successfully:', Game);
+            
+            console.log('Creating game instance...');
+            const game = new Game();
+            console.log('Game created:', game);
+            
+            // Store game globally for debugging
+            window.game = game;
+            
+        } catch (error) {
+            console.error('Import/creation failed:', error);
+            console.error('Stack:', error.stack);
+        }
+    </script>
+</body>
+</html>

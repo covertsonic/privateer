@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privateer Game Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .game-container {
+            position: relative;
+            width: 1200px;
+            height: 800px;
+            border: 2px solid #333;
+        }
+        #game-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+    
+    <script type="module" src="./js/game/Game.js"></script>
+    
+    <script>
+        // Log when the window loads
+        window.addEventListener('load', () => {
+            console.log('Window loaded');
+            console.log('window.game:', window.game);
+        });
+        
+        // Check for game periodically
+        let checkCount = 0;
+        const checkInterval = setInterval(() => {
+            checkCount++;
+            console.log(`Check ${checkCount}: window.game =`, window.game);
+            if (window.game || checkCount > 10) {
+                clearInterval(checkInterval);
+                if (window.game) {
+                    console.log('Game found!', window.game);
+                } else {
+                    console.log('Game not found after 10 checks');
+                }
+            }
+        }, 500);
+    </script>
+</body>
+</html>

@@ -35,27 +35,51 @@
             <div id="ship-status" class="panel">
                 <div class="panel-header">SHIP STATUS</div>
                 <div class="status-bar">
-                    <div class="status-label">Shields</div>
-                    <div class="status-bar-outer">
-                        <div id="shield-bar" class="status-bar-inner shield"></div>
+                    <div class="tooltip">
+                        <div class="status-label">
+                            <span>Shields</span>
+                            <span class="status-value">100%</span>
+                        </div>
+                        <div class="status-bar-outer">
+                            <div id="shield-bar" class="status-bar-inner shield" data-value="100%"></div>
+                        </div>
+                        <span class="tooltiptext">Shields: 100%<br>Absorbs damage before armor</span>
                     </div>
                 </div>
                 <div class="status-bar">
-                    <div class="status-label">Armor</div>
-                    <div class="status-bar-outer">
-                        <div id="armor-bar" class="status-bar-inner armor"></div>
+                    <div class="tooltip">
+                        <div class="status-label">
+                            <span>Armor</span>
+                            <span class="status-value">100%</span>
+                        </div>
+                        <div class="status-bar-outer">
+                            <div id="armor-bar" class="status-bar-inner armor" data-value="100%"></div>
+                        </div>
+                        <span class="tooltiptext">Armor: 100%<br>Reduces damage to hull</span>
                     </div>
                 </div>
                 <div class="status-bar">
-                    <div class="status-label">Hull</div>
-                    <div class="status-bar-outer">
-                        <div id="hull-bar" class="status-bar-inner hull"></div>
+                    <div class="tooltip">
+                        <div class="status-label">
+                            <span>Hull</span>
+                            <span class="status-value">100/100</span>
+                        </div>
+                        <div class="status-bar-outer">
+                            <div id="hull-bar" class="status-bar-inner hull" data-value="100/100"></div>
+                        </div>
+                        <span class="tooltiptext">Hull: 100/100<br>Ship integrity</span>
                     </div>
                 </div>
                 <div class="status-bar">
-                    <div class="status-label">Capacitor</div>
-                    <div class="status-bar-outer">
-                        <div id="capacitor-bar" class="status-bar-inner capacitor"></div>
+                    <div class="tooltip">
+                        <div class="status-label">
+                            <span>Capacitor</span>
+                            <span class="status-value">100%</span>
+                        </div>
+                        <div class="status-bar-outer">
+                            <div id="capacitor-bar" class="status-bar-inner capacitor" data-value="100%"></div>
+                        </div>
+                        <span class="tooltiptext">Capacitor: 100%<br>Powers ship modules</span>
                     </div>
                 </div>
             </div>
@@ -77,5 +101,121 @@
     
     <!-- Game Scripts -->
     <script type="module" src="./js/game/Game.js"></script>
+    <!-- Game Controls -->
+    <div id="game-controls">
+        <div class="control-section">
+            <div class="control-label">Range</div>
+            <div class="zoom-options">
+                <div class="zoom-option" data-zoom="S">S</div>
+                <div class="zoom-option" data-zoom="SM"></div>
+                <div class="zoom-option" data-zoom="M">M</div>
+                <div class="zoom-option" data-zoom="ML"></div>
+                <div class="zoom-option" data-zoom="L">L</div>
+            </div>
+            <div class="zoom-toggle">
+                <div class="toggle-button" id="toggle-range-markers">Range Lines</div>
+            </div>
+        </div>
+        <div class="control-section">
+            <div class="control-button" id="restart-game">Restart Game</div>
+        </div>
+        <div class="control-section">
+            <div class="control-button" id="spawn-test-ship">Spawn Test Ship</div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize game controls once DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for the game to be initialized
+            setTimeout(() => {
+                if (window.game) {
+                    console.log('Game found, initializing controls...');
+                    initGameControls();
+                } else {
+                    console.error('Game not initialized yet');
+                    // Try again in another second
+                    setTimeout(() => {
+                        if (window.game) {
+                            console.log('Game found on second attempt, initializing controls...');
+                            initGameControls();
+                        } else {
+                            console.error('Game initialization failed');
+                        }
+                    }, 1000);
+                }
+            }, 500);
+        });
+
+        function initGameControls() {
+            // Set default zoom level
+            document.querySelector('.zoom-option[data-zoom="M"]').classList.add('active');
+            
+            // Add click handlers to zoom options
+            document.querySelectorAll('.zoom-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    // Remove active class from all options
+                    document.querySelectorAll('.zoom-option').forEach(opt => {
+                        opt.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked option
+                    option.classList.add('active');
+                    
+                    // Set zoom level in game
+                    const zoomLevel = option.getAttribute('data-zoom');
+                    if (window.game && window.game.renderSystem) {
+                        window.game.renderSystem.setZoom(zoomLevel);
+                    }
+                });
+            });
+            
+            // Toggle range markers
+            document.getElementById('toggle-range-markers').addEventListener('click', () => {
+                if (window.game && window.game.renderSystem) {
+                    const button = document.getElementById('toggle-range-markers');
+                    const isEnabled = window.game.renderSystem.toggleRangeMarkers();
+                    
+                    if (isEnabled) {
+                        button.classList.add('active');
+                    } else {
+                        button.classList.remove('active');
+                    }
+                }
+            });
+            
+            // Add restart game button handler
+            document.getElementById('restart-game').addEventListener('click', () => {
+                console.log('Restart button clicked');
+                if (window.game && typeof window.game.restart === 'function') {
+                    console.log('Calling game.restart()...');
+                    window.game.restart();
+                } else {
+                    console.error('Game restart function not available');
+                }
+            });
+            
+            // Add spawn test ship button handler
+            document.getElementById('spawn-test-ship').addEventListener('click', () => {
+                console.log('Spawn test ship button clicked');
+                if (window.game) {
+                    console.log('Creating a test ship at center of screen...');
+                    try {
+                        // Get center of screen
+                        const centerX = window.game.canvas.width / 2;
+                        const centerY = window.game.canvas.height / 2;
+                        
+                        // Create ship with fixed properties for testing
+                        const testShip = window.game.spawnTestShip(centerX, centerY);
+                        console.log('Test ship created:', testShip);
+                    } catch (error) {
+                        console.error('Error creating test ship:', error);
+                    }
+                } else {
+                    console.error('Game not available');
+                }
+            });
+        }
+    </script>
 </body>
 </html>
