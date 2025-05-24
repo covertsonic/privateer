@@ -94,4 +94,9 @@ export class InputManager {
         this.mouse.buttons = {};
         this.mouse.wheel = 0;
     }
+    
+    resetPressedKeys() {
+        // Clear just the pressed keys (used at the end of each frame)
+        this.keysPressed = {};
+    }
 }

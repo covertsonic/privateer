@@ -10,6 +10,8 @@ import { AISystem } from './systems/AISystem.js';
 import { CombatSystem } from './systems/CombatSystem.js';
 import { PlayerShip } from './entities/PlayerShip.js';
 import { EnemyShip } from './entities/EnemyShip.js';
+import { NavBuoy } from './entities/NavBuoy.js';
+import { POISystem } from './systems/POISystem.js';
 
 console.log('All imports completed');
 
@@ -64,12 +66,17 @@ export class Game {
         this.combatSystem = new CombatSystem();
         console.log('CombatSystem initialized');
 
+
         // POI panel elements
         this.poiContainer = document.getElementById('poi-container');
         this.poiContextMenu = document.getElementById('poi-context-menu');
         this.poiOrbitItem = document.getElementById('poi-orbit-1km');
         this.currentPOITarget = null;
         this.hidePOIMenuBound = () => this.hidePOIMenu();
+
+        this.poiSystem = new POISystem(this);
+        console.log('POISystem initialized');
+
         
         // Game state
         this.player = null;
@@ -161,6 +168,9 @@ export class Game {
             // Set reference to entity manager for the player
             this.player.entityManager = this.entityManager;
             console.log('Player ship created and registered');
+
+            // Spawn navigation buoy 1000m north of player
+            this.spawnNavBuoy();
             
             // Clear any existing enemies
             console.log('Clearing any existing enemies...');
@@ -180,6 +190,9 @@ export class Game {
             // Set player in targeting system
             this.targetingSystem.setPlayer(this.player);
             console.log('Player set in targeting system');
+
+            this.poiSystem.setPlayer(this.player);
+            console.log('Player set in POI system');
             
             // Start the game loop
             console.log('Starting game loop...');
@@ -286,6 +299,19 @@ export class Game {
             console.error('Error creating test ship:', error);
             return null;
         }
+    }
+
+    spawnNavBuoy() {
+        if (!this.player) return null;
+
+        const scale = 0.01; // meters to pixels
+        const playerPos = this.player.components.position;
+        const x = playerPos.x;
+        const y = playerPos.y - 1000 * scale;
+
+        const buoy = new NavBuoy(x, y);
+        this.entityManager.addEntity(buoy);
+        return buoy;
     }
     
     spawnEnemies(count) {
@@ -512,6 +538,7 @@ export class Game {
         this.aiSystem.update(deltaTime, this.entityManager, this.player);
         this.physicsSystem.update(deltaTime, this.entityManager);
         this.targetingSystem.update(deltaTime, this.entityManager);
+        this.poiSystem.update(deltaTime, this.entityManager);
         
         // Update other entities
         const entities = this.entityManager.getEntities();

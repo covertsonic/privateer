@@ -238,18 +238,22 @@ export class TargetingSystem {
     }
     
     createTargetEntry(target, distance) {
-        // Get ship data
-        const ship = target.components.ship;
-        const shield = ship?.shield || 0;
-        const armor = ship?.armor || 0;
-        const hull = ship?.hull || 0;
-        const shieldMax = ship?.shieldMax || 0;
-        const armorMax = ship?.armorMax || 0;
-        const hullMax = ship?.hullMax || 0;
-        const velocity = ship?.velocity || 0;
-        const capacitor = ship?.capacitor || 0;
-        const capacitorMax = ship?.capacitorMax || 0;
-        const angularVelocity = this.calculateAngularVelocity(this.player, target);
+        // Create the entry element first
+        const entry = document.createElement('div');
+        entry.className = 'target-entry';
+        
+        // Get ship data with null checks
+        const ship = target.components?.ship || {};
+        const shield = ship.shield || 0;
+        const armor = ship.armor || 0;
+        const hull = ship.hull || 0;
+        const shieldMax = ship.shieldMax || 1; // Avoid division by zero
+        const armorMax = ship.armorMax || 1;   // Avoid division by zero
+        const hullMax = ship.hullMax || 1;     // Avoid division by zero
+        const velocity = ship.velocity || 0;
+        const capacitor = ship.capacitor || 0;
+        const capacitorMax = Math.max(1, ship.capacitorMax || 1); // Ensure no division by zero
+        const angularVelocity = this.calculateAngularVelocity(this.player, target) || 0;
         
         // Format distance (EVE Online style)
         let formattedDistance;

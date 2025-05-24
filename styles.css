@@ -101,6 +101,7 @@ body {
     height: 300px; /* Fixed height for the panel */
 }
 
+
 #poi-panel {
     grid-column: 1;
     grid-row: 3;
@@ -147,6 +148,35 @@ body {
 
 .poi-entry:hover {
     background-color: rgba(30,50,70,0.8);
+=======
+.tab-buttons {
+    display: flex;
+    margin-bottom: 6px;
+}
+
+.tab-btn {
+    flex: 1;
+    text-align: center;
+    cursor: pointer;
+    padding: 4px 6px;
+    background-color: rgba(20, 30, 50, 0.6);
+    border: 1px solid #2a4a6e;
+    border-bottom: none;
+    color: #a0c0e0;
+}
+
+.tab-btn.active {
+    background-color: rgba(20, 30, 50, 0.9);
+    color: #4a9cff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+
 }
 
 #targets-container {
@@ -173,6 +203,51 @@ body {
 #targets-container::-webkit-scrollbar-thumb {
     background-color: #2a4a6e;
     border-radius: 3px;
+}
+
+#poi-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    height: calc(100% - 20px);
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #2a4a6e rgba(20, 30, 50, 0.3);
+}
+
+#poi-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+#poi-container::-webkit-scrollbar-track {
+    background: rgba(20, 30, 50, 0.3);
+    border-radius: 3px;
+}
+
+#poi-container::-webkit-scrollbar-thumb {
+    background-color: #2a4a6e;
+    border-radius: 3px;
+}
+
+.poi-entry {
+    background-color: rgba(20, 30, 50, 0.6);
+    border: 1px solid #2a4a6e;
+    border-radius: 4px;
+    padding: 6px 10px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8em;
+}
+
+.no-poi-message {
+    text-align: center;
+    color: #6a8aae;
+    font-style: italic;
+    font-size: 0.85em;
+    padding: 10px 0;
 }
 
 .target-entry {

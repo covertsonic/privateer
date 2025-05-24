@@ -101,10 +101,22 @@ export class EnemyShip extends Ship {
         }
         
         // Add ship component with name
+        const shipName = options.name || shipType?.type || 'Enemy Ship';
+        console.log(`Setting ship name to: ${shipName}`);
         this.components.ship = {
-            name: options.name || shipType.type || 'Enemy Ship',
-            type: shipType.type || 'Generic Enemy',
-            team: 'enemy'
+            name: shipName,
+            type: shipType?.type || 'Generic Enemy',
+            team: 'enemy',
+            // Add other ship stats that might be needed
+            shield: options.shield || shipType?.shield || 50,
+            shieldMax: options.shield || shipType?.shield || 50,
+            armor: options.armor || shipType?.armor || 75,
+            armorMax: options.armor || shipType?.armor || 75,
+            hull: options.maxHealth || shipType?.maxHealth || 100,
+            hullMax: options.maxHealth || shipType?.maxHealth || 100,
+            velocity: options.velocity || 0,
+            capacitor: 100,
+            capacitorMax: 100
         };
         
         // Make sure position is set
