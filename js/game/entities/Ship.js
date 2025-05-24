@@ -91,6 +91,11 @@ export class Ship extends Entity {
             energy.current = Math.min(energy.max, energy.current + energy.rechargeRate * deltaTime);
         }
         
+        // Update ship's rotation to face its direction of movement
+        if (velocity && (velocity.x !== 0 || velocity.y !== 0)) {
+            rotation.angle = Math.atan2(velocity.y, velocity.x);
+        }
+        
         // Note: Position updates are now handled by PhysicsSystem
         // to ensure consistent scaling and gameplay factors.
         // The PhysicsSystem will apply velocity, drag, and bounds checking.

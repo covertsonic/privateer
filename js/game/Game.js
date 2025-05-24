@@ -170,6 +170,13 @@ export class Game {
             console.log('Setting up input handlers...');
             this.setupInputHandlers();
             
+            // Set initial state for range toggle button
+            const rangeToggleButton = document.getElementById('toggle-range-markers');
+            if (rangeToggleButton && this.renderSystem.showRangeMarkers) {
+                rangeToggleButton.classList.add('active');
+                console.log('Range toggle button (ID: toggle-range-markers) set to active initially.');
+            }
+            
             // Set player in targeting system
             this.targetingSystem.setPlayer(this.player);
             console.log('Player set in targeting system');
@@ -181,103 +188,6 @@ export class Game {
             console.log('Game initialization complete');
         } catch (error) {
             console.error('Error during game initialization:', error);
-        }
-    }
-    
-    spawnTestShip(x, y) {
-        // Get player position (or use center of screen if no player)
-        const playerX = this.player ? this.player.components.position.x : this.canvas.width / 2;
-        const playerY = this.player ? this.player.components.position.y : this.canvas.height / 2;
-        
-        console.log('Player position:', { x: playerX, y: playerY });
-        
-        // Place test ship at a visible distance from player
-        const distance = 100; // Pixels
-        const angle = Math.PI / 4; // 45-degree angle
-        
-        // Calculate position relative to player
-        const testX = playerX + Math.cos(angle) * distance;
-        const testY = playerY + Math.sin(angle) * distance;
-        
-        console.log(`Creating test ship at (${testX.toFixed(1)}, ${testY.toFixed(1)})`);
-        console.log(`Distance from player: ${distance} pixels`);
-        
-        try {
-            // Clear any existing test ships first
-            const existingTestShips = this.entityManager.getEntities().filter(e => e.id && e.id.startsWith('test-ship'));
-            for (const ship of existingTestShips) {
-                this.entityManager.removeEntity(ship);
-            }
-            
-            // Create a ship with fixed properties for reliable testing
-            const enemy = new EnemyShip(testX, testY, {
-                name: 'Test Orbiter',
-                shipType: 'Rifter',  // Use a specific ship type
-                initialVelocity: {
-                    x: 0,  // Start with no velocity
-                    y: 0   // Start with no velocity
-                },
-                // Set specific orbit parameters
-                orbitDistance: distance,  // Use the same distance we spawned at
-                orbitSpeed: 1.0           // Normal orbit speed
-            });
-            
-            // Ensure ID is predictable for debugging
-            enemy.id = 'test-ship-' + Date.now();
-            
-            // Assign entity manager reference
-            enemy.entityManager = this.entityManager;
-            
-            // Add to entity manager BEFORE setting up any state
-            this.entityManager.addEntity(enemy);
-            
-            // Force the ship to be in attacking state AFTER it's added to the entity manager
-            enemy.state = 'attacking';
-            enemy.target = this.player;
-            
-            // Give it initial orbital velocity
-            const perpX = -(testY - playerY) / distance;
-            const perpY = (testX - playerX) / distance;
-            const orbitSpeed = 30; // Pixels per second
-            
-            enemy.components.velocity.x = perpX * orbitSpeed;
-            enemy.components.velocity.y = perpY * orbitSpeed;
-            
-            // Add custom update method that will force orbiting
-            const originalUpdate = enemy.update;
-            enemy.update = function(deltaTime, playerShip) {
-                // Call original update first
-                originalUpdate.call(this, deltaTime, playerShip);
-                
-                // Force orbiting behavior
-                if (playerShip && this.state === 'attacking') {
-                    this.orbitTarget(playerShip, distance, 1.0);
-                }
-            };
-            
-            console.log('Test ship created with components:', Object.keys(enemy.components));
-            console.log('Test ship position:', enemy.components.position);
-            console.log('Test ship velocity:', enemy.components.velocity);
-            console.log('Test ship renderable:', enemy.components.renderable);
-            
-            // Check if the entity manager properly registered this entity
-            const allEntities = this.entityManager.getEntities();
-            const entitiesWithPosVel = this.entityManager.getEntitiesWithComponents('position', 'velocity');
-            const renderableEntities = this.entityManager.getEntitiesWithComponents('position', 'renderable');
-            
-            console.log(`Entity manager has ${allEntities.length} total entities`);
-            console.log(`Entity manager has ${entitiesWithPosVel.length} entities with position and velocity`);
-            console.log(`Entity manager has ${renderableEntities.length} entities with position and renderable`);
-            console.log('Renderable entities:', renderableEntities.map(e => ({
-                id: e.id,
-                position: e.components.position,
-                renderable: e.components.renderable
-            })));
-            
-            return enemy;
-        } catch (error) {
-            console.error('Error creating test ship:', error);
-            return null;
         }
     }
     
@@ -374,6 +284,16 @@ export class Game {
             });
         });
         
+        // Specific listener for the range toggle button
+        const rangeToggleButton = document.getElementById('toggle-range-markers');
+        if (rangeToggleButton) {
+            rangeToggleButton.addEventListener('click', () => {
+                const rangeMarkersEnabled = this.renderSystem.toggleRangeMarkers();
+                rangeToggleButton.classList.toggle('active', rangeMarkersEnabled);
+                console.log(`[setupInputHandlers] Range markers toggled to ${rangeMarkersEnabled ? 'enabled' : 'disabled'} by button ID 'toggle-range-markers' click.`);
+            });
+        }
+        
         // Canvas click for targeting
         this.canvas.addEventListener('click', (e) => {
             const rect = this.canvas.getBoundingClientRect();
@@ -420,7 +340,13 @@ export class Game {
     }
     
     handleModuleActivation(moduleType) {
-        if (!this.target) return;
+        // Allow range-toggle even if no target is selected -- This logic might be removed or adjusted if no other non-target modules exist.
+        // For now, keeping it general. If 'range-toggle' was the only non-target module, this guard could be simplified.
+        if (moduleType !== 'range-toggle' && !this.target) { // Reverted selector for 'range-toggle' just in case, though it will be removed.
+            console.log('[handleModuleActivation] No target selected, and module is not range-toggle. Aborting.');
+            // For other modules, if no target, remove active state from all buttons as action can't be performed
+            document.querySelectorAll('.module-btn').forEach(b => b.classList.remove('active'));
+        }
         
         switch (moduleType) {
             case 'weapon':
@@ -449,11 +375,11 @@ export class Game {
             if (!this.frameCount) this.frameCount = 0;
             this.frameCount++;
             if (this.frameCount % 60 === 0) {
-                console.log(`Game loop running - Frame ${this.frameCount}`, {
-                    entities: this.entityManager.getEntities().length,
-                    player: !!this.player,
-                    isRunning: this.isRunning
-                });
+                // console.log(`Game loop running - Frame ${this.frameCount}`, {
+                //     entities: this.entityManager.getEntities().length,
+                //     player: !!this.player,
+                //     isRunning: this.isRunning
+                // });
             }
             
             // Calculate delta time
@@ -479,7 +405,6 @@ export class Game {
     
     update(deltaTime) {
         // Update input
-        this.inputManager.update();
         
         // Handle zoom controls
         if (this.inputManager.isKeyPressed('s')) {
@@ -493,7 +418,14 @@ export class Game {
         // Handle range marker toggle
         if (this.inputManager.isKeyPressed('r')) {
             const rangeMarkersEnabled = this.renderSystem.toggleRangeMarkers();
-            console.log(`Range markers ${rangeMarkersEnabled ? 'enabled' : 'disabled'}`);
+            console.log(`Range markers ${rangeMarkersEnabled ? 'enabled' : 'disabled'} by R key`);
+            
+            // Sync button state
+            const rangeToggleButton = document.getElementById('toggle-range-markers');
+            if (rangeToggleButton) {
+                rangeToggleButton.classList.toggle('active', rangeMarkersEnabled);
+                console.log(`Range toggle button (ID: toggle-range-markers) class 'active' set to ${rangeMarkersEnabled} by R key`);
+            }
         }
         
         // Update player based on input
@@ -523,12 +455,6 @@ export class Game {
         // Check for tab key press to cycle through targets
         if (this.inputManager.isKeyPressed('tab')) {
             this.cycleTargets();
-        }
-        
-        // Check for 't' key press to spawn test ship
-        if (this.inputManager.isKeyPressed('t')) {
-            console.log('T key pressed - spawning test ship');
-            this.spawnTestShip();
         }
         
         // Check for 'q' key press to restart game
@@ -627,7 +553,7 @@ export class Game {
     render() {
         // Debug log
         if (this.frameCount % 60 === 0) {
-            console.log('Render method called');
+            // console.log('Render method called');
         }
         
         try {

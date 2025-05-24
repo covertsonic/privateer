@@ -491,7 +491,7 @@ renderTargetIndicator(target) {
     ctx.lineTo(size/2, size/2);
     ctx.lineTo(size/2, size/2 - cornerSize);
     ctx.stroke();
-    
+
     ctx.restore();
 }
 
@@ -517,11 +517,25 @@ renderLockingIndicator(target) {
     ctx.setLineDash([3, 3]);
     ctx.lineWidth = 1;
 
+    ctx.save();
+    ctx.rotate(time * 2);
+
     ctx.beginPath();
     ctx.arc(0, 0, 25, 0, Math.PI * 2);
     ctx.stroke();
-    
-    ctx.restore();
+
+    ctx.font = '12px Arial';
+    ctx.fillStyle = 'rgba(255, 74, 74, 0.8)';
+    ctx.textAlign = 'center';
+
+    let displayDistance;
+    if (marker.distance >= 1000) {
+        displayDistance = `${marker.distance / 1000}km`;
+    } else {
+        displayDistance = `${marker.distance}m`;
+    }
+
+    ctx.fillText(displayDistance, playerPosition.x, playerPosition.y - radiusInPixels - 5);
 }
 
 toggleRangeMarkers() {
@@ -536,7 +550,7 @@ renderRangeMarkers(playerPosition) {
     const ctx = this.ctx;
     const centerX = this.width / 2;
     const centerY = this.height / 2;
-    const scaleFactor = 0.01;
+    const scaleFactor = 0.01; // Same as in applyCameraTransform
     
     ctx.save();
     ctx.setLineDash([5, 5]);
@@ -560,16 +574,25 @@ renderRangeMarkers(playerPosition) {
             displayDistance = `${marker.distance / 1000}km`;
         } else {
             displayDistance = `${marker.distance}m`;
-        }
-        
-        ctx.fillText(displayDistance, centerX, centerY - radius - 5);
-    });
-    
-    ctx.setLineDash([]);
-    ctx.restore();
-}
+        ctx.arc(0, 0, 25, 0, Math.PI * 2);
+        ctx.stroke();
 
-drawTargetReticle(target) {
+            ctx.font = '12px Arial';
+            ctx.fillStyle = marker.color.replace('0.3', '0.8').replace('0.2', '0.8').replace('0.1', '0.8');
+            ctx.textAlign = 'center';
+
+            let displayDistance;
+            if (marker.distance >= 1000) {
+                displayDistance = `${marker.distance / 1000}km`;
+            } else {
+                displayDistance = `${marker.distance}m`;
+            }
+
+            ctx.fillText(displayDistance, playerPosition.x, playerPosition.y - radiusInPixels - 5);
+        }
+    }
+
+    drawTargetReticle(target) {
         if (!target.components.position) return;
 
         const ctx = this.ctx;

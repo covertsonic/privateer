@@ -62,14 +62,14 @@ export class EnemyShip extends Ship {
     ];
     
     constructor(x, y, options = {}) {
-        console.log('Creating EnemyShip instance at', x, y);
+        // console.log('Creating EnemyShip instance at', x, y);
         
         // Select a random Minmatar frigate if no specific type is provided
         let shipType = options.shipType || null;
         if (!shipType) {
             const randomIndex = Math.floor(Math.random() * EnemyShip.MINMATAR_FRIGATES.length);
             shipType = EnemyShip.MINMATAR_FRIGATES[randomIndex];
-            console.log('Selected random ship type:', shipType.type);
+            // console.log('Selected random ship type:', shipType.type);
         }
         
         // Call Ship constructor with ship type properties
@@ -92,7 +92,9 @@ export class EnemyShip extends Ship {
         
         // Ensure unique ID
         this.id = 'enemy-' + Math.random().toString(36).substr(2, 9);
-        console.log('Created enemy ship with ID:', this.id);
+        // console.log('Created enemy ship with ID:', this.id);
+
+        this.logFrameCounter = 0; // Initialize frame counter for logging
         
         // Ensure all required components exist
         if (!this.components) {
@@ -102,7 +104,7 @@ export class EnemyShip extends Ship {
         
         // Add ship component with name
         const shipName = options.name || shipType?.type || 'Enemy Ship';
-        console.log(`Setting ship name to: ${shipName}`);
+        // console.log(`Setting ship name to: ${shipName}`);
         this.components.ship = {
             name: shipName,
             type: shipType?.type || 'Generic Enemy',
@@ -134,7 +136,7 @@ export class EnemyShip extends Ship {
                 y: options.initialVelocity.y,
                 maxSpeed: this.components.velocity?.maxSpeed || 350
             };
-            console.log('Setting initial velocity:', this.components.velocity);
+            // console.log('Setting initial velocity:', this.components.velocity);
         } else if (!this.components.velocity) {
             // Ensure velocity exists with default values
             this.components.velocity = { x: 0, y: 0, maxSpeed: 350 };
@@ -205,6 +207,8 @@ export class EnemyShip extends Ship {
     }
     
     update(deltaTime, playerShip) {
+        if (!this.isActive) return;
+
         // Call parent update first
         super.update(deltaTime, {});
         
@@ -235,10 +239,22 @@ export class EnemyShip extends Ship {
                 this.updateIdle(deltaTime);
                 break;
         }
+
+        this.logFrameCounter++;
+        /*
+        if (this.logFrameCounter % 60 === 0) {
+            if (this.components && this.components.rotation) {
+                console.log(`[${this.id}] Final rotation.angle: ${this.components.rotation.angle.toFixed(2)}`);
+            } else {
+                console.log(`[${this.id}] Rotation component missing for logging.`);
+            }
+        }
+        */
     }
     
     updateAIState(distance, playerShip) {
-        const currentTime = Date.now() / 1000; // Convert to seconds
+        const currentTime = Date.now() / 1000; // Current time in seconds
+        const timeInCurrentState = currentTime - (this.lastStateChange || 0);
         const healthPercent = this.components.health.current / this.components.health.max;
         
         // Don't change state too often
@@ -291,25 +307,18 @@ export class EnemyShip extends Ship {
         const orbitDistance = this.orbitDistance || 5000;
         const orbitBuffer = 500; // Buffer zone of 500m
         
-        console.log(`Ship ${this.id} at distance ${distance.toFixed(0)}m from player, target orbit: ${orbitDistance}m`);
-        
         if (distance > orbitDistance + orbitBuffer) {
             // Too far - move towards player
-            console.log(`Ship ${this.id} moving toward player to reach orbit distance`);
             const angle = rotation.angle;
             velocity.x += Math.cos(angle) * velocity.acceleration * deltaTime;
             velocity.y -= Math.sin(angle) * velocity.acceleration * deltaTime;
         } else if (distance < orbitDistance - orbitBuffer) {
             // Too close - move away from player
-            console.log(`Ship ${this.id} moving away from player to maintain safe distance`);
             const angle = rotation.angle + Math.PI; // Reverse direction
             velocity.x += Math.cos(angle) * velocity.acceleration * deltaTime * 0.8;
             velocity.y -= Math.sin(angle) * velocity.acceleration * deltaTime * 0.8;
         } else {
             // In the sweet spot - orbit the player with tangential velocity
-            console.log(`Ship ${this.id} orbiting player at ${distance.toFixed(0)}m`);
-            
-            // Calculate perpendicular vector for orbital motion
             const perpX = -dy / distance; // Perpendicular to the radial vector
             const perpY = dx / distance;
             
@@ -392,20 +401,10 @@ export class EnemyShip extends Ship {
      * @param {number} speed - The orbit speed factor (1 = normal speed)
      */
     orbitTarget(target, desiredDistance, speed) {
-        if (!target || !target.components || !target.components.position) {
-            console.warn('Cannot orbit: invalid target');
-            return;
-        }
-        
-        // Get positions
+        const { position, velocity } = this.components;
+        const myPos = position;
         const targetPos = target.components.position;
-        const myPos = this.components.position;
-        const velocity = this.components.velocity;
-        
-        // Calculate vector from target to ship
-        const dx = myPos.x - targetPos.x;
-        const dy = myPos.y - targetPos.y;
-        const currentDistance = Math.sqrt(dx * dx + dy * dy);
+        const currentDistance = Math.sqrt((myPos.x - targetPos.x) * (myPos.x - targetPos.x) + (myPos.y - targetPos.y) * (myPos.y - targetPos.y));
         
         if (currentDistance < 1) {
             // Too close! Move away in a random direction
@@ -430,8 +429,8 @@ export class EnemyShip extends Ship {
         }
         
         // Calculate normalized direction vectors
-        const normalizedRadialX = dx / currentDistance; // Towards ship from target
-        const normalizedRadialY = dy / currentDistance;
+        const normalizedRadialX = (myPos.x - targetPos.x) / currentDistance; // Towards ship from target
+        const normalizedRadialY = (myPos.y - targetPos.y) / currentDistance;
         
         // Tangential component (perpendicular to radial for orbit)
         const normalizedTangentialX = -normalizedRadialY;
@@ -450,20 +449,20 @@ export class EnemyShip extends Ship {
         velocity.x = velocity.x * (1 - transitionRate) + targetVelocityX * transitionRate;
         velocity.y = velocity.y * (1 - transitionRate) + targetVelocityY * transitionRate;
         
-        // Make ship face direction of travel
-        if (Math.abs(velocity.x) > 0.1 || Math.abs(velocity.y) > 0.1) {
+        // Make ship's left side face the target (player)
+        if (targetPos && myPos) {
+            const angleToPlayer = Math.atan2(targetPos.y - myPos.y, targetPos.x - myPos.x);
+            const finalAngle = angleToPlayer + Math.PI / 2;
+            this.components.rotation.angle = finalAngle;
+        } else if (Math.abs(velocity.x) > 0.1 || Math.abs(velocity.y) > 0.1) {
+            // Fallback: face direction of travel if targetPos or myPos is missing
             const velocityAngle = Math.atan2(velocity.y, velocity.x);
-            this.components.rotation.angle = velocityAngle + Math.PI/2;
+            this.components.rotation.angle = velocityAngle;
+        } else {
+            // console.log(`[${this.id}] OrbitTarget NO ROTATION: targetPos/myPos missing and no velocity.`);
         }
         
         // Debug info
-        console.log(`Ship ${this.id} orbital info:`);
-        console.log(`- Current distance: ${(currentDistance / scaleFactor).toFixed(0)}m, Desired: ${desiredDistance}m`);
-        console.log(`- Radial factor: ${radialFactor.toFixed(2)}, Distance difference: ${(distanceDifference / scaleFactor).toFixed(0)}m`);
-        console.log(`- Velocity: (${velocity.x.toFixed(1)}, ${velocity.y.toFixed(1)})`);
-        console.log(`- Position: (${myPos.x.toFixed(1)}, ${myPos.y.toFixed(1)})`);
-        console.log(`- Target position: (${targetPos.x.toFixed(1)}, ${targetPos.y.toFixed(1)})`);
-        console.log('---');
     }
     
     setState(newState) {

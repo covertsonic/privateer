@@ -24,6 +24,10 @@ export class TargetingSystem {
         }
         
         this.setupEventListeners();
+
+        // For AV throttling
+        this.lastAVValues = new Map(); // Stores { value: string, timestamp: number } by target.id
+        this.avUpdateInterval = 500; // milliseconds, update AV display roughly twice per second
     }
     
     setPlayer(player) {
@@ -189,52 +193,55 @@ export class TargetingSystem {
     }
     
     updateTargetList() {
-        try {
-            if (!this.targetListContainer) {
-                console.debug('Target list container not found');
-                return;
-            }
-            
-            // Clear existing entries
-            this.targetListContainer.innerHTML = '';
-            
-            // If no potential targets, show message
-            if (!this.potentialTargets || this.potentialTargets.length === 0) {
-                const noTargetsMsg = document.createElement('div');
-                noTargetsMsg.className = 'no-targets-message';
-                noTargetsMsg.textContent = 'No targets in range';
-                this.targetListContainer.appendChild(noTargetsMsg);
-                return;
-            }
-            
-            // Create target entries
-            this.potentialTargets.forEach(target => {
-                try {
-                    if (!target?.components?.position || !this.player?.components?.position) {
-                        return; // Skip if no position data
-                    }
-                    
-                    // Calculate distance to player
-                    const distance = this.calculateDistance(
-                        this.player.components.position, 
-                        target.components.position
-                    );
-                    
-                    // Skip if out of range
-                    if (distance > this.maxTargetRange) return;
-                    
-                    // Create target entry
-                    const entry = this.createTargetEntry(target, distance);
-                    if (entry) {
-                        this.targetListContainer.appendChild(entry);
-                    }
-                } catch (error) {
-                    console.error('Error creating target entry:', error, target);
-                }
-            });
-        } catch (error) {
-            console.error('Error in updateTargetList:', error);
+        if (!this.targetListContainer || !this.player || !this.player.components.position) {
+            if (this.targetListContainer) this.targetListContainer.innerHTML = ''; // Clear if no player data
+            return;
         }
+
+        // Cleanup stale entries from lastAVValues
+        const currentTargetIds = new Set(this.potentialTargets.map(t => t.id));
+        for (const id of this.lastAVValues.keys()) {
+            if (!currentTargetIds.has(id)) {
+                this.lastAVValues.delete(id);
+            }
+        }
+
+        this.targetListContainer.innerHTML = ''; // Clear previous entries
+        
+        // If no potential targets, show message
+        if (!this.potentialTargets || this.potentialTargets.length === 0) {
+            const noTargetsMsg = document.createElement('div');
+            noTargetsMsg.className = 'no-targets-message';
+            noTargetsMsg.textContent = 'No targets in range';
+            this.targetListContainer.appendChild(noTargetsMsg);
+            return;
+        }
+        
+        // Create target entries
+        this.potentialTargets.forEach(target => {
+            try {
+                if (!target?.components?.position || !this.player?.components?.position) {
+                    return; // Skip if no position data
+                }
+                
+                // Calculate distance to player
+                const distance = this.calculateDistance(
+                    this.player.components.position, 
+                    target.components.position
+                );
+                
+                // Skip if out of range
+                if (distance > this.maxTargetRange) return;
+                
+                // Create target entry
+                const entry = this.createTargetEntry(target, distance);
+                if (entry) {
+                    this.targetListContainer.appendChild(entry);
+                }
+            } catch (error) {
+                console.error('Error creating target entry:', error, target);
+            }
+        });
     }
     
     createTargetEntry(target, distance) {
@@ -281,8 +288,8 @@ export class TargetingSystem {
         header.appendChild(distanceElement);
         
         // Status bars
-        const stats = document.createElement('div');
-        stats.className = 'target-stats';
+        const statsContainer = document.createElement('div');
+        statsContainer.className = 'target-stats';
         
         // Shield mini-bar
         const shieldStatus = this.createMiniStatusBar('S', shield, shieldMax, 'shield');
@@ -293,53 +300,34 @@ export class TargetingSystem {
         // Hull mini-bar
         const hullStatus = this.createMiniStatusBar('H', hull, hullMax, 'hull');
         
-        stats.appendChild(shieldStatus);
-        stats.appendChild(armorStatus);
-        stats.appendChild(hullStatus);
+        statsContainer.appendChild(shieldStatus);
+        statsContainer.appendChild(armorStatus);
+        statsContainer.appendChild(hullStatus);
         
-        // Details (angular velocity, velocity, and capacitor)
+        // Angular Velocity
+        const avElement = document.createElement('div');
+        avElement.className = 'target-stat target-av';
+        
+        const currentTime = performance.now();
+        let avText = 'AV: --';
+        const lastAVEntry = this.lastAVValues.get(target.id);
+
+        if (lastAVEntry && (currentTime - lastAVEntry.timestamp < this.avUpdateInterval)) {
+            avText = lastAVEntry.value;
+        } else {
+            const angularVelocity = this.calculateAngularVelocity(this.player, target);
+            if (angularVelocity !== null && !isNaN(angularVelocity)) {
+                avText = `AV: ${Math.abs(angularVelocity).toFixed(1)}°/s`;
+            }
+            this.lastAVValues.set(target.id, { value: avText, timestamp: currentTime });
+        }
+        avElement.textContent = avText;
+        
+        statsContainer.appendChild(avElement);
+        
+        // Details (velocity, and capacitor)
         const details = document.createElement('div');
         details.className = 'target-details';
-        
-        // AV with custom tooltip
-        const tooltipContainer = document.createElement('div');
-        tooltipContainer.className = 'tooltip-container';
-
-        const avElement = document.createElement('div');
-        avElement.className = 'av-value';
-        avElement.textContent = `AV: ${Math.abs(angularVelocity).toFixed(1)}°/s`;
-        
-        // Create custom tooltip
-        const tooltip = document.createElement('div');
-        tooltip.className = 'custom-tooltip';
-        tooltip.innerHTML = 'Angular Velocity: How fast the target is moving across your field of view.<br><br>' +
-                         '• < 5°/s: Easy to track<br>' +
-                         '• 5-10°/s: Moderate tracking<br>' +
-                         '• > 10°/s: Difficult to track<br>' +
-                         '• 0°/s: Target is moving directly toward/away from you';
-        
-        // Add tooltip events
-        avElement.addEventListener('mouseenter', () => {
-            tooltip.style.display = 'block';
-            
-            // Position tooltip after it's visible to get correct measurements
-            setTimeout(() => {
-                const rect = avElement.getBoundingClientRect();
-                tooltip.style.left = `${rect.left + (rect.width / 2)}px`;
-                tooltip.style.top = `${rect.top - 5}px`;
-            }, 0);
-        });
-        
-        avElement.addEventListener('mouseleave', () => {
-            tooltip.style.display = 'none';
-        });
-        
-        // Add elements to container
-        tooltipContainer.appendChild(avElement);
-        tooltipContainer.appendChild(tooltip);
-        
-        // Add tooltip container to details instead of avElement directly
-        details.appendChild(tooltipContainer);
         
         // Velocity display
         const velElement = document.createElement('div');
@@ -350,7 +338,6 @@ export class TargetingSystem {
         const capElement = document.createElement('div');
         capElement.textContent = `Cap: ${Math.round(capacitor / capacitorMax * 100)}%`;
         
-        // We already added the tooltipContainer with avElement
         details.appendChild(velElement);
         details.appendChild(capElement);
         
@@ -388,112 +375,111 @@ export class TargetingSystem {
         
         // Assemble entry
         entry.appendChild(header);
-        entry.appendChild(stats);
+        entry.appendChild(statsContainer);
         entry.appendChild(details);
         entry.appendChild(targetButton);
         
         return entry;
     }
     
-
-createMiniStatusBar(label, current, max, type) {
-    const container = document.createElement('div');
-    container.className = 'mini-status';
-    
-    const labelElement = document.createElement('div');
-    labelElement.className = 'mini-label';
-    labelElement.textContent = label;
-    
-    const bar = document.createElement('div');
-    bar.className = 'mini-bar';
-    
-    // Create 4 segments
-    const segments = 4;
-    const filledSegments = Math.ceil((current / max) * segments);
-    
-    for (let i = 0; i < segments; i++) {
-        const segment = document.createElement('div');
-        segment.className = `mini-segment ${i < filledSegments ? 'filled' : 'empty'} ${type}`;
-        bar.appendChild(segment);
+    createMiniStatusBar(label, current, max, type) {
+        const container = document.createElement('div');
+        container.className = 'mini-status';
+        
+        const labelElement = document.createElement('div');
+        labelElement.className = 'mini-label';
+        labelElement.textContent = label;
+        
+        const bar = document.createElement('div');
+        bar.className = 'mini-bar';
+        
+        // Create 4 segments
+        const segments = 4;
+        const filledSegments = Math.ceil((current / max) * segments);
+        
+        for (let i = 0; i < segments; i++) {
+            const segment = document.createElement('div');
+            segment.className = `mini-segment ${i < filledSegments ? 'filled' : 'empty'} ${type}`;
+            bar.appendChild(segment);
+        }
+        
+        container.appendChild(labelElement);
+        container.appendChild(bar);
+            
+        return container;
     }
     
-    container.appendChild(labelElement);
-    container.appendChild(bar);
-            
-    return container;
-}
-
-updateTargetInfo() {
-    try {
-        // Check if we have the required data and UI elements
-        if (!this.player || !this.player.target || !this.targetInfoName || !this.targetInfoDistance || !this.targetInfoVelocity || !this.targetInfoAngularVelocity) {
-            return;
-        }
-        
-        const target = this.player.target;
-        const targetShip = target.components?.ship;
-        
-        // Update target name
-        if (this.targetInfoName) {
-            this.targetInfoName.textContent = targetShip?.name || 'Unknown Target';
-        }
-        
-        // Calculate and update distance if we have position data
-        if (this.player.components?.position && target.components?.position) {
-            const distance = this.calculateDistance(
-                this.player.components.position, 
-                target.components.position
-            );
-            
-            // Format distance (EVE Online style)
-            let formattedDistance;
-            if (distance < 1000) {
-                formattedDistance = `Distance: ${Math.round(distance)}m`;
-            } else if (distance < 10000) {
-                formattedDistance = `Distance: ${(distance / 1000).toFixed(1)}km`;
-            } else {
-                formattedDistance = `Distance: ${Math.round(distance / 1000)}km`;
+    updateTargetInfo() {
+        try {
+            // Check if we have the required data and UI elements
+            if (!this.player || !this.player.target || !this.targetInfoName || !this.targetInfoDistance || !this.targetInfoVelocity || !this.targetInfoAngularVelocity) {
+                return;
             }
             
-            if (this.targetInfoDistance) {
-                this.targetInfoDistance.textContent = formattedDistance;
+            const target = this.player.target;
+            const targetShip = target.components?.ship;
+            
+            // Update target name
+            if (this.targetInfoName) {
+                this.targetInfoName.textContent = targetShip?.name || 'Unknown Target';
             }
-        }
-        
-        // Calculate and update velocity
-        if (this.targetInfoVelocity) {
-            let velocity = 0;
-            if (target.components?.velocity) {
-                const velocityComp = target.components.velocity;
-                // For ships with maxSpeed defined
-                if (velocityComp.maxSpeed) {
-                    // If the ship is moving with purpose (orbiting, attacking, or fleeing)
-                    if (target.components.orbit || (target.state && ['attacking', 'fleeing'].includes(target.state))) {
-                        velocity = velocityComp.maxSpeed * 0.9; // 90% of max speed
-                    } else {
-                        velocity = velocityComp.maxSpeed * 0.3; // 30% when idle
-                    }
+            
+            // Calculate and update distance if we have position data
+            if (this.player.components?.position && target.components?.position) {
+                const distance = this.calculateDistance(
+                    this.player.components.position, 
+                    target.components.position
+                );
+                
+                // Format distance (EVE Online style)
+                let formattedDistance;
+                if (distance < 1000) {
+                    formattedDistance = `Distance: ${Math.round(distance)}m`;
+                } else if (distance < 10000) {
+                    formattedDistance = `Distance: ${(distance / 1000).toFixed(1)}km`;
                 } else {
-                    // Fallback to calculated velocity
-                    const vx = velocityComp.x || 0;
-                    const vy = velocityComp.y || 0;
-                    velocity = Math.sqrt(vx * vx + vy * vy);
+                    formattedDistance = `Distance: ${Math.round(distance / 1000)}km`;
+                }
+                
+                if (this.targetInfoDistance) {
+                    this.targetInfoDistance.textContent = formattedDistance;
                 }
             }
-            this.targetInfoVelocity.textContent = `Velocity: ${Math.round(velocity)}m/s`;
-        }
-        
-        // Calculate and update angular velocity
-        if (this.targetInfoAngularVelocity) {
-            const angularVelocity = this.calculateAngularVelocity(this.player, target);
-            if (angularVelocity !== null && !isNaN(angularVelocity)) {
-                this.targetInfoAngularVelocity.textContent = `Angular: ${Math.abs(angularVelocity).toFixed(1)}°/s`;
-            } else {
-                this.targetInfoAngularVelocity.textContent = 'Angular: --';
+            
+            // Calculate and update velocity
+            if (this.targetInfoVelocity) {
+                let velocity = 0;
+                if (target.components?.velocity) {
+                    const velocityComp = target.components.velocity;
+                    // For ships with maxSpeed defined
+                    if (velocityComp.maxSpeed) {
+                        // If the ship is moving with purpose (orbiting, attacking, or fleeing)
+                        if (target.components.orbit || (target.state && ['attacking', 'fleeing'].includes(target.state))) {
+                            velocity = velocityComp.maxSpeed * 0.9; // 90% of max speed
+                        } else {
+                            velocity = velocityComp.maxSpeed * 0.3; // 30% when idle
+                        }
+                    } else {
+                        // Fallback to calculated velocity
+                        const vx = velocityComp.x || 0;
+                        const vy = velocityComp.y || 0;
+                        velocity = Math.sqrt(vx * vx + vy * vy);
+                    }
+                }
+                this.targetInfoVelocity.textContent = `Velocity: ${Math.round(velocity)}m/s`;
             }
+            
+            // Calculate and update angular velocity
+            if (this.targetInfoAngularVelocity) {
+                const angularVelocity = this.calculateAngularVelocity(this.player, target);
+                if (angularVelocity !== null && !isNaN(angularVelocity)) {
+                    this.targetInfoAngularVelocity.textContent = `Angular: ${Math.abs(angularVelocity).toFixed(1)}°/s`;
+                } else {
+                    this.targetInfoAngularVelocity.textContent = 'Angular: --';
+                }
+            }
+        } catch (error) {
+            console.error('Error in updateTargetInfo:', error);
         }
-    } catch (error) {
-        console.error('Error in updateTargetInfo:', error);
     }
-}
 }

@@ -18,16 +18,16 @@ export class PhysicsSystem {
         // Ensure deltaTime is in seconds (if > 10, assume ms and convert)
         const deltaTimeSeconds = deltaTime > 10 ? deltaTime / 1000 : deltaTime;
         
-        console.group('PhysicsSystem Update');
-        console.log(`Processing physics with deltaTime: ${deltaTimeSeconds}s`);
+        // console.group('PhysicsSystem Update');
+        // console.log(`Processing physics with deltaTime: ${deltaTimeSeconds}s`);
         
         // Get all entities with position and velocity components
         const entities = entityManager.getEntitiesWithComponents('position', 'velocity');
-        console.log(`Found ${entities.length} entities with position and velocity`);
+        // console.log(`Found ${entities.length} entities with position and velocity`);
         
         if (entities.length === 0) {
             console.warn('No entities with position and velocity components found!');
-            console.groupEnd();
+            // console.groupEnd(); // Corresponds to 'PhysicsSystem Update'
             return;
         }
         
@@ -48,9 +48,9 @@ export class PhysicsSystem {
             
             const isEnemy = !entity.components.playerControlled;
             if (isEnemy) {
-                console.group(`Enemy Ship Update - ID: ${entity.id}`);
-                console.log(`Position before: (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
-                console.log(`Velocity: (${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)})`);
+                // console.group(`Enemy Ship Update - ID: ${entity.id}`);
+                // console.log(`Position before: (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
+                // console.log(`Velocity: (${velocity.x.toFixed(2)}, ${velocity.y.toFixed(2)})`);
             }
             
             // Apply drag
@@ -71,8 +71,8 @@ export class PhysicsSystem {
             }
             
             if (isEnemy) {
-                console.log(`Position after: (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
-                console.log(`Moved by: (${moveX.toFixed(2)}, ${moveY.toFixed(2)})`);
+                // console.log(`Position after: (${position.x.toFixed(2)}, ${position.y.toFixed(2)})`);
+                // console.log(`Moved by: (${moveX.toFixed(2)}, ${moveY.toFixed(2)})`);
             }
             
             // Apply gravity if entity is affected by it

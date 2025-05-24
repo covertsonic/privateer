@@ -5,12 +5,13 @@ export class AISystem {
     constructor() {
         // Configuration for AI behaviors
         this.config = {
-            attackRange: 300,        // Distance at which AI will engage
-            orbitDistance: 250,      // Preferred orbit distance
+            attackRange: 60,         // Distance at which AI will engage (6km * 0.01 scaleFactor)
+            minOrbitDistancePixels: 20, // Minimum orbit distance (2km * 0.01 scaleFactor)
+            maxOrbitDistancePixels: 50, // Maximum orbit distance (5km * 0.01 scaleFactor)
             fleeHealthPercent: 0.2,  // Health percentage to flee at
             updateInterval: 0.1,     // How often to update AI decisions (seconds)
-            minVelocity: 5,         // Minimum velocity for ships
-            orbitSpeedFactor: 0.7,   // Orbit speed as fraction of max speed
+            minVelocity: 2,          // Minimum velocity for ships
+            orbitSpeedFactor: 0.5,   // Orbit speed as fraction of max speed
             defaultState: 'orbit'    // Default behavior state: 'orbit', 'idle', or 'attacking'
         };
         
@@ -55,6 +56,20 @@ export class AISystem {
         const health = entity.components.health;
         
         if (!position || !velocity) return;
+        
+        // Assign a persistent desired orbit distance to the entity if it doesn't have one
+        if (entity.desiredOrbitDistancePixels === undefined) {
+            if (this.config.minOrbitDistancePixels !== undefined && this.config.maxOrbitDistancePixels !== undefined) {
+                entity.desiredOrbitDistancePixels = Math.random() * 
+                    (this.config.maxOrbitDistancePixels - this.config.minOrbitDistancePixels) + 
+                    this.config.minOrbitDistancePixels;
+                // console.log(`Entity ${entity.id} assigned orbit: ${entity.desiredOrbitDistancePixels.toFixed(2)}px`); // For debugging
+            } else {
+                // Fallback if config is somehow missing these, though it shouldn't be
+                entity.desiredOrbitDistancePixels = 35; // Default to mid-range (3.5km scaled)
+                // console.warn("AISystem config missing min/maxOrbitDistancePixels, using fallback for entity", entity.id);
+            }
+        }
         
         // Calculate distance to player
         const dx = playerShip.components.position.x - position.x;
@@ -102,7 +117,8 @@ export class AISystem {
         const position = entity.components.position;
         const velocity = entity.components.velocity;
         const rotation = entity.components.rotation;
-        
+        let isOrbitingThisTick = false; // Flag to track if orbiting behavior was chosen
+
         // Calculate direction to target
         const dx = target.components.position.x - position.x;
         const dy = target.components.position.y - position.y;
@@ -110,15 +126,14 @@ export class AISystem {
         // Set target for the entity
         entity.target = target;
         
-        // Try to maintain optimal distance
-        if (currentDistance > this.config.orbitDistance * 1.2) {
-            // Move closer
+        // Charge if too far
+        if (currentDistance > entity.desiredOrbitDistancePixels * 1.2) { // Use entity's desired orbit distance
             const angle = Math.atan2(dy, dx);
-            const speed = velocity.maxSpeed * 0.7;
+            const speed = velocity.maxSpeed;
             velocity.x = Math.cos(angle) * speed;
             velocity.y = Math.sin(angle) * speed;
-        } else if (currentDistance < this.config.orbitDistance * 0.8) {
-            // Move away
+        } else if (currentDistance < entity.desiredOrbitDistancePixels * 0.8) { // Use entity's desired orbit distance
+            // Move away if too close
             const angle = Math.atan2(dy, dx);
             const speed = velocity.maxSpeed * 0.5;
             velocity.x = -Math.cos(angle) * speed;
@@ -126,10 +141,11 @@ export class AISystem {
         } else {
             // Orbit at current distance
             this.executeOrbitBehavior(entity, target, currentDistance);
+            isOrbitingThisTick = true; // Set flag as orbiting behavior was executed
         }
         
-        // Update rotation to face target
-        if (rotation) {
+        // Update rotation to face target ONLY if not orbiting
+        if (rotation && !isOrbitingThisTick) {
             rotation.angle = Math.atan2(dy, dx);
         }
     }
@@ -138,7 +154,24 @@ export class AISystem {
         const position = entity.components.position;
         const velocity = entity.components.velocity;
         const rotation = entity.components.rotation;
-        
+
+        // Ensure the entity has a desired orbit distance
+        const desiredDistance = entity.desiredOrbitDistancePixels;
+        if (desiredDistance === undefined) {
+            // console.error(`Entity ${entity.id} in executeOrbitBehavior has no desiredOrbitDistancePixels!`);
+            // Fallback or early exit if critical information is missing
+            // For now, let's use a default from config if available, or a hardcoded one.
+            // This path should ideally not be hit if updateAI correctly assigns the property.
+            const fallbackOrbit = (this.config.minOrbitDistancePixels + this.config.maxOrbitDistancePixels) / 2 || 35;
+            // console.warn(`Using fallback orbit distance ${fallbackOrbit} for entity ${entity.id}`);
+            entity.desiredOrbitDistancePixels = fallbackOrbit; // Assign it now to prevent repeated errors
+            // desiredDistance = fallbackOrbit; // This line was missing, re-assign to use it in this call
+            // Corrected: re-assign to the local const 'desiredDistance' for the current execution
+            const correctedDesiredDistance = entity.desiredOrbitDistancePixels;
+            if (correctedDesiredDistance === undefined) return; // Should not happen with the above assignment
+            // Use correctedDesiredDistance below
+        }
+
         // Calculate direction vector to target
         const dx = target.components.position.x - position.x;
         const dy = target.components.position.y - position.y;
@@ -150,33 +183,38 @@ export class AISystem {
         const nx = dx / length;
         const ny = dy / length;
         
-        // Maintain optimal orbit distance
+        // Determine if we need to adjust orbit distance
+        // Use the entity's specific desiredDistance for calculation
+        const currentDesiredDistance = entity.desiredOrbitDistancePixels; // Ensure we use the potentially corrected one
         let radiusAdjustment = 0;
-        const desiredDistance = this.config.orbitDistance;
         
-        if (Math.abs(distance - desiredDistance) > 20) {
-            // If we're too far or too close, adjust our orbit
-            radiusAdjustment = (distance - desiredDistance) * 0.05;
+        // Simple proportional control for orbit distance
+        if (Math.abs(distance - currentDesiredDistance) > 2) { // Use a smaller deadzone (e.g. 2 pixels) for finer control at small scales
+            radiusAdjustment = (distance - currentDesiredDistance) * 0.05; // Slightly more aggressive adjustment factor
         }
         
-        // Perpendicular vector for circular motion (90 degrees)
-        // Choose clockwise or counter-clockwise based on entity ID for variety
+        // Use consistent orbit direction based on entity ID
         const direction = parseInt(entity.id.substr(-1), 36) % 2 === 0 ? 1 : -1;
+        
+        // Calculate perpendicular vector for circular motion
         const perpX = -ny * direction;
         const perpY = nx * direction;
         
-        // Set velocity for circular motion
+        // Use a more modest orbit speed
         const orbitSpeed = velocity.maxSpeed * this.config.orbitSpeedFactor;
-        velocity.x = perpX * orbitSpeed;
-        velocity.y = perpY * orbitSpeed;
         
-        // Add adjustment to maintain desired orbit distance
-        velocity.x -= nx * radiusAdjustment;
-        velocity.y -= ny * radiusAdjustment;
+        // Set base velocity for circular motion
+        const baseVelocityX = perpX * orbitSpeed;
+        const baseVelocityY = perpY * orbitSpeed;
         
-        // Update rotation to face perpendicular to orbit direction (like real ships)
+        // Apply velocity with gradual adjustment (lerping)
+        // This makes movement smoother by blending previous and new velocity
+        const blendFactor = 0.08; // Lower = smoother but slower to respond
+        velocity.x = velocity.x * (1 - blendFactor) + (baseVelocityX - nx * radiusAdjustment) * blendFactor;
+        velocity.y = velocity.y * (1 - blendFactor) + (baseVelocityY - ny * radiusAdjustment) * blendFactor;
+        
+        // Update rotation to face direction of movement
         if (rotation) {
-            // Calculate the direction of movement
             rotation.angle = Math.atan2(velocity.y, velocity.x);
         }
         
