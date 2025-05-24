@@ -101,6 +101,54 @@ body {
     height: 300px; /* Fixed height for the panel */
 }
 
+#poi-panel {
+    grid-column: 1;
+    grid-row: 3;
+    width: 320px;
+    height: 150px;
+}
+
+#poi-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    height: calc(100% - 20px);
+    overflow-y: auto;
+}
+
+.context-menu {
+    background-color: rgba(20,30,50,0.9);
+    border: 1px solid #2a4a6e;
+    border-radius: 4px;
+    color: #a0c0e0;
+    font-size: 0.8em;
+    padding: 4px 0;
+    z-index: 1000;
+}
+
+.context-menu .menu-item {
+    padding: 4px 12px;
+    cursor: pointer;
+}
+
+.context-menu .menu-item:hover {
+    background-color: rgba(40,60,80,0.8);
+}
+
+.poi-entry {
+    background-color: rgba(20,30,50,0.6);
+    border: 1px solid #2a4a6e;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.poi-entry:hover {
+    background-color: rgba(30,50,70,0.8);
+}
+
 #targets-container {
     display: flex;
     flex-direction: column;

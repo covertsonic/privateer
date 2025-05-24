@@ -59,10 +59,17 @@ export class Game {
         
         this.targetingSystem = new TargetingSystem(this);
         console.log('TargetingSystem initialized');
-        
+
         // Combat system
         this.combatSystem = new CombatSystem();
         console.log('CombatSystem initialized');
+
+        // POI panel elements
+        this.poiContainer = document.getElementById('poi-container');
+        this.poiContextMenu = document.getElementById('poi-context-menu');
+        this.poiOrbitItem = document.getElementById('poi-orbit-1km');
+        this.currentPOITarget = null;
+        this.hidePOIMenuBound = () => this.hidePOIMenu();
         
         // Game state
         this.player = null;
@@ -551,6 +558,9 @@ export class Game {
         
         // Update target info
         this.updateTargetInfo();
+
+        // Update POI list
+        this.updatePOIList();
     }
     
     updateTargetInfo() {
@@ -668,6 +678,44 @@ export class Game {
         if (this.player) {
             const pos = this.player.getComponent('position');
             ctx.fillText(`Player: (${Math.round(pos.x)}, ${Math.round(pos.y)})`, 10, 50);
+        }
+    }
+
+    updatePOIList() {
+        if (!this.poiContainer) return;
+        this.poiContainer.innerHTML = '';
+        const pois = this.entityManager.getEntities().filter(e => e !== this.player);
+        pois.forEach(poi => {
+            const entry = document.createElement('div');
+            entry.className = 'poi-entry';
+            entry.textContent = poi.components.ship?.name || poi.id;
+            entry.addEventListener('contextmenu', (ev) => {
+                ev.preventDefault();
+                this.showPOIMenu(ev.clientX, ev.clientY, poi);
+            });
+            this.poiContainer.appendChild(entry);
+        });
+    }
+
+    showPOIMenu(x, y, target) {
+        if (!this.poiContextMenu || !this.poiOrbitItem) return;
+        this.currentPOITarget = target;
+        this.poiContextMenu.style.left = `${x}px`;
+        this.poiContextMenu.style.top = `${y}px`;
+        this.poiContextMenu.style.display = 'block';
+        document.addEventListener('click', this.hidePOIMenuBound);
+        this.poiOrbitItem.onclick = () => {
+            if (this.player) {
+                this.player.setDesiredOrbit(target, 1000);
+            }
+            this.hidePOIMenu();
+        };
+    }
+
+    hidePOIMenu() {
+        if (this.poiContextMenu) {
+            this.poiContextMenu.style.display = 'none';
+            document.removeEventListener('click', this.hidePOIMenuBound);
         }
     }
     

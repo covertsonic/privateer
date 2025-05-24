@@ -30,6 +30,14 @@
                     <div class="no-targets-message">No targets in range</div>
                 </div>
             </div>
+
+            <!-- POI Panel -->
+            <div id="poi-panel" class="panel">
+                <div class="panel-header">POINTS OF INTEREST</div>
+                <div id="poi-container">
+                    <!-- POI entries will be dynamically added here -->
+                </div>
+            </div>
             
             <!-- Ship Status -->
             <div id="ship-status" class="panel">
@@ -122,6 +130,11 @@
         <div class="control-section">
             <div class="control-button" id="spawn-test-ship">Spawn Test Ship</div>
         </div>
+    </div>
+
+    <!-- Context menu for POI entries -->
+    <div id="poi-context-menu" class="context-menu" style="display:none; position:absolute;">
+        <div class="menu-item" id="poi-orbit-1km">Orbit at 1 km</div>
     </div>
 
     <script>

@@ -161,6 +161,13 @@ export class PlayerShip extends Ship {
             console.log('Orbiting target:', this.target.components.ship?.name);
         }
     }
+
+    setDesiredOrbit(target, distance) {
+        if (!target) return;
+        this.target = target;
+        this.orbitTarget = target;
+        this.orbitDistance = distance;
+    }
     
     orbit(deltaTime) {
         if (!this.orbitTarget || !this.orbitTarget.components.position) return;
