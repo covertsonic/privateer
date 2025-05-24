@@ -22,12 +22,18 @@
                 <div id="target-angular-velocity">-</div>
             </div>
             
-            <!-- Target List -->
+            <!-- Target & POI Lists -->
             <div id="target-list" class="panel">
-                <div class="panel-header">TARGETS</div>
-                <div id="targets-container">
+                <div class="tab-buttons">
+                    <div class="tab-btn active" data-tab="targets">Targets</div>
+                    <div class="tab-btn" data-tab="poi">Points of Interest</div>
+                </div>
+                <div id="targets-container" class="tab-content active">
                     <!-- Target entries will be dynamically added here -->
                     <div class="no-targets-message">No targets in range</div>
+                </div>
+                <div id="poi-container" class="tab-content">
+                    <div class="no-poi-message">No points of interest</div>
                 </div>
             </div>
             
@@ -214,6 +220,24 @@
                 } else {
                     console.error('Game not available');
                 }
+            });
+
+            // Tab switching for target/POI lists
+            const tabButtons = document.querySelectorAll('#target-list .tab-btn');
+            const targetsContainer = document.getElementById('targets-container');
+            const poiContainer = document.getElementById('poi-container');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    targetsContainer.classList.remove('active');
+                    poiContainer.classList.remove('active');
+                    btn.classList.add('active');
+                    if (btn.dataset.tab === 'targets') {
+                        targetsContainer.classList.add('active');
+                    } else {
+                        poiContainer.classList.add('active');
+                    }
+                });
             });
         }
     </script>
